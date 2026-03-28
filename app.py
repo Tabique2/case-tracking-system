@@ -136,57 +136,72 @@ def add_case():
 
     return render_template("add_case.html")
 
-# Edit Case
+#Edit Case
 @app.route('/edit-case/<case_id>', methods=['GET', 'POST'])
 def edit_case(case_id):
-    if 'user' not in session:
-        return redirect('/login')
+        if 'user' not in session:
+            return redirect('/login')
 
-    # Get existing case
-    response = supabase.table("cases").select("*").eq("id", case_id).execute()
-    if not response.data:
-        return "Case not found ❌"
-    case = response.data[0]
+        # Get existing case
+        response = supabase.table("cases").select("*").eq("id", case_id).execute()
+        if not response.data:
+            return "Case not found ❌"
+        case = response.data[0]
 
-    # Permission check
-    if session.get('role') != 'admin' and case.get('uploaded_by') != session['user']:
-        return "Access denied ❌"
+        # Permission check
+        if session.get('role') != 'admin' and case.get('uploaded_by') != session['user']:
+            return "Access denied ❌"
 
-    signed_url = None
-    if case.get("document_url"):
-        signed_url = supabase.storage.from_('case-documents').create_signed_url(case['document_url'], 3600)["signedURL"]
+        # Show current document
+        signed_url = None
+        if case.get("document_url"):
+            signed_url = supabase.storage.from_('case-documents') \
+                .create_signed_url(case['document_url'], 3600)["signedURL"]
 
-    if request.method == 'POST':
-        updated_data = {
-            "case_number": request.form['case_number'],
-            "case_title": request.form['case_title'],
-            "case_type": request.form['case_type'],
-            "complainant": mask_name(request.form['complainant']),
-            "respondent": mask_name(request.form['respondent']),
-            "status": request.form['status']
-        }
+        # ✅ IMPORTANT: EVERYTHING BELOW MUST BE INSIDE POST
+        if request.method == 'POST':
 
-        # Delete document if requested
-        if request.form.get('delete_document') == 'yes' and case.get("document_url"):
-            supabase.storage.from_('case-documents').remove([case['document_url']])
-            updated_data['document_url'] = None
+            updated_data = {
+                "case_number": request.form['case_number'],
+                "case_title": request.form['case_title'],
+                "case_type": request.form['case_type'],
+                "complainant": mask_name(request.form['complainant']),
+                "respondent": mask_name(request.form['respondent']),
+                "status": request.form['status']
+            }
 
-        # Replace document if uploaded
-        file = request.files.get('document')
-        if file and file.filename != '':
-            filename = f"{case_id}_{file.filename}"
-            file_bytes = file.read()
-            
-            # Add upsert=True to avoid Duplicate error
-            supabase.storage.from_('case-documents').upload(filename, file_bytes, upsert=True)
-            updated_data['document_url'] = filename
+            # Delete document if checked
+            if request.form.get('delete_document') == 'yes' and case.get("document_url"):
+                supabase.storage.from_('case-documents').remove([case['document_url']])
+                updated_data['document_url'] = None
 
-        supabase.table("cases").update(updated_data).eq("id", case_id).execute()
-        log_activity(session['user'], "Edited a case", case_id)
+            # Replace document if new file uploaded
+            file = request.files.get('document')
 
-        return redirect('/dashboard')
+            if file and file.filename != '':
+                filename = f"{case_id}_{file.filename}"
+                file_bytes = file.read()
 
-    return render_template("edit_case.html", case=case, signed_url=signed_url)
+                # Delete old file first
+                try:
+                    supabase.storage.from_('case-documents').remove([filename])
+                except:
+                    pass
+
+                # Upload new file
+                supabase.storage.from_('case-documents').upload(filename, file_bytes)
+
+                # Save filename
+                updated_data['document_url'] = filename
+
+            # ✅ MUST BE INSIDE POST
+            supabase.table("cases").update(updated_data).eq("id", case_id).execute()
+            log_activity(session['user'], "Edited a case", case_id)
+
+            return redirect('/dashboard')
+
+        # GET request (show form)
+        return render_template("edit_case.html", case=case, signed_url=signed_url)
 
 # Delete Case
 @app.route('/delete-case/<case_id>')
@@ -231,11 +246,23 @@ def upload_document(case_id):
     if session.get('role') != 'admin' and case.get('uploaded_by') != session['user']:
         return "Access denied ❌"
 
+    # ✅ ADD YOUR CODE HERE (THIS IS THE CORRECT PLACE)
     filename = f"{case_id}_{file.filename}"
     file_bytes = file.read()
-    # Add upsert=True to prevent duplicate error
-    supabase.storage.from_('case-documents').upload(filename, file_bytes, upsert=True)
+
+    # Delete old file first
+    try:
+        supabase.storage.from_('case-documents').remove([filename])
+    except:
+        pass
+
+    # Upload new file
+    supabase.storage.from_('case-documents').upload(filename, file_bytes)
+
+    # Save to database
     supabase.table("cases").update({"document_url": filename}).eq("id", case_id).execute()
+
+    # Log activity
     log_activity(session['user'], "Uploaded document", case_id)
 
     return redirect('/dashboard')
