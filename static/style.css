@@ -224,3 +224,18 @@ h1, h2 {
 .status.closed {
     background-color: #6c757d;
 }
+
+/* Make case document images small and left-aligned */
+.document-cell {
+    width: 120px; /* optional, sets column width */
+    text-align: left; /* aligns content to the left */
+    vertical-align: middle; /* vertically center the image */
+}
+
+.document-img {
+    max-width: 100px; /* limits width of image */
+    max-height: 80px; /* limits height of image */
+    object-fit: cover; /* crop image if aspect ratio is different */
+    border: 1px solid #ccc; /* optional, gives a small border */
+    border-radius: 5px; /* optional, rounded corners */
+}

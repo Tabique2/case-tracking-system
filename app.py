@@ -26,6 +26,14 @@ def mask_name(full_name):
         last = parts[1][0] + "**"
         return f"{first} {last}"
 
+def log_activity(user_email, action, case_id=None):
+    data = {
+        "user_email": user_email,
+        "action": action,
+        "case_id": case_id
+    }
+    supabase.table("activity_logs").insert(data).execute()
+
 # ----------------------------
 # Routes
 # ----------------------------
@@ -46,7 +54,7 @@ def login():
             user = response.data[0]
             if user['password'] == password:
                 session['user'] = user['email']
-                session['role'] = user['role']  # store role
+                session['role'] = user['role']
                 return redirect('/dashboard')
             else:
                 return "Wrong password ❌"
@@ -71,15 +79,29 @@ def dashboard():
     query = supabase.table("cases").select("*").order("id", desc=True)
     if case_type:
         query = query.eq("case_type", case_type)
+
+    # Non-admins only see their own uploaded cases/documents
+    if session.get('role') != 'admin':
+        query = query.eq("uploaded_by", session['user'])
+
     response = query.execute()
     cases = response.data if response.data else []
 
-    # Generate signed URL for each case document (1-hour expiry)
+    # Generate signed URL for documents only if user is allowed
     for case in cases:
+        case["signed_url"] = None  # default None
         if case.get("document_url"):
-            filename = case["document_url"]  # filename stored in DB
-            signed_url = supabase.storage.from_('case-documents').create_signed_url(filename, 3600)
-            case["signed_url"] = signed_url["signedURL"]
+            if session.get('role') == 'admin' or case.get('uploaded_by') == session['user']:
+                filename = case["document_url"]
+                try:
+                    signed_url = supabase.storage.from_('case-documents').create_signed_url(filename, 3600)
+                    case["signed_url"] = signed_url["signedURL"]
+                except Exception as e:
+                    # File not found in bucket, just skip
+                    print(f"Warning: File {filename} not found in bucket: {e}")
+            else:
+                # User not allowed to see this file
+                case["signed_url"] = None
 
     return render_template(
         "dashboard.html",
@@ -101,29 +123,38 @@ def add_case():
             "case_type": request.form['case_type'],
             "complainant": mask_name(request.form['complainant']),
             "respondent": mask_name(request.form['respondent']),
-            "status": "Open"
+            "status": "Open",
+            "uploaded_by": session['user']
         }
-        supabase.table("cases").insert(data).execute()
+        result = supabase.table("cases").insert(data).execute()
+
+        if result.data:
+            case_id = result.data[0]['id']
+            log_activity(session['user'], "Added a case", case_id)
+
         return redirect('/dashboard')
 
     return render_template("add_case.html")
 
+# Edit Case
 @app.route('/edit-case/<case_id>', methods=['GET', 'POST'])
 def edit_case(case_id):
     if 'user' not in session:
         return redirect('/login')
 
+    # Get existing case
     response = supabase.table("cases").select("*").eq("id", case_id).execute()
     if not response.data:
         return "Case not found ❌"
-
     case = response.data[0]
 
-    # Generate signed URL for existing document
+    # Permission check
+    if session.get('role') != 'admin' and case.get('uploaded_by') != session['user']:
+        return "Access denied ❌"
+
     signed_url = None
     if case.get("document_url"):
-        result = supabase.storage.from_('case-documents').create_signed_url(case['document_url'], 3600)
-        signed_url = result['signedURL']
+        signed_url = supabase.storage.from_('case-documents').create_signed_url(case['document_url'], 3600)["signedURL"]
 
     if request.method == 'POST':
         updated_data = {
@@ -135,26 +166,24 @@ def edit_case(case_id):
             "status": request.form['status']
         }
 
-        # Delete document if checkbox checked
+        # Delete document if requested
         if request.form.get('delete_document') == 'yes' and case.get("document_url"):
-            try:
-                supabase.storage.from_('case-documents').remove([case['document_url']])
-            except Exception as e:
-                return f"Error deleting document: {e}"
+            supabase.storage.from_('case-documents').remove([case['document_url']])
             updated_data['document_url'] = None
 
-        # Replace document if a new file is uploaded
+        # Replace document if uploaded
         file = request.files.get('document')
         if file and file.filename != '':
             filename = f"{case_id}_{file.filename}"
             file_bytes = file.read()
-            try:
-                supabase.storage.from_('case-documents').upload(filename, file_bytes)
-            except Exception as e:
-                return f"Error uploading new document: {e}"
+            
+            # Add upsert=True to avoid Duplicate error
+            supabase.storage.from_('case-documents').upload(filename, file_bytes, upsert=True)
             updated_data['document_url'] = filename
 
         supabase.table("cases").update(updated_data).eq("id", case_id).execute()
+        log_activity(session['user'], "Edited a case", case_id)
+
         return redirect('/dashboard')
 
     return render_template("edit_case.html", case=case, signed_url=signed_url)
@@ -165,30 +194,61 @@ def delete_case(case_id):
     if 'user' not in session:
         return redirect('/login')
 
+    # Get case to check permission
+    response = supabase.table("cases").select("*").eq("id", case_id).execute()
+    if not response.data:
+        return "Case not found ❌"
+    case = response.data[0]
+
+    if session.get('role') != 'admin' and case.get('uploaded_by') != session['user']:
+        return "Access denied ❌"
+
+    # Delete document if exists
+    if case.get("document_url"):
+        supabase.storage.from_('case-documents').remove([case['document_url']])
+
     supabase.table("cases").delete().eq("id", case_id).execute()
+    log_activity(session['user'], "Deleted a case", case_id)
+
     return redirect('/dashboard')
 
+# Upload Document separately (admin only)
 @app.route('/upload-document/<case_id>', methods=['POST'])
 def upload_document(case_id):
     if 'user' not in session:
         return redirect('/login')
-    if session.get('role') != 'admin':
-        return "Access denied ❌"
 
     file = request.files.get('document')
-    if file and file.filename != '':
-        filename = f"{case_id}_{file.filename}"  # unique filename per case
-        file_bytes = file.read()  # read file content as bytes
-        try:
-            # Upload bytes to private bucket
-            supabase.storage.from_('case-documents').upload(filename, file_bytes)
-        except Exception as e:
-            return f"Upload error: {e}"
+    if not file or file.filename == '':
+        return redirect('/dashboard')
 
-        # Save filename in the cases table
-        supabase.table("cases").update({"document_url": filename}).eq("id", case_id).execute()
+    response = supabase.table("cases").select("*").eq("id", case_id).execute()
+    if not response.data:
+        return "Case not found ❌"
+    case = response.data[0]
+
+    # Only admin or uploader can upload
+    if session.get('role') != 'admin' and case.get('uploaded_by') != session['user']:
+        return "Access denied ❌"
+
+    filename = f"{case_id}_{file.filename}"
+    file_bytes = file.read()
+    # Add upsert=True to prevent duplicate error
+    supabase.storage.from_('case-documents').upload(filename, file_bytes, upsert=True)
+    supabase.table("cases").update({"document_url": filename}).eq("id", case_id).execute()
+    log_activity(session['user'], "Uploaded document", case_id)
 
     return redirect('/dashboard')
+
+# Activity Logs
+@app.route('/activity-logs')
+def activity_logs():
+    if 'user' not in session:
+        return redirect('/login')
+
+    response = supabase.table("activity_logs").select("*").order("created_at", desc=True).execute()
+    logs = response.data if response.data else []
+    return render_template("activity_logs.html", logs=logs)
 
 # Run app
 if __name__ == '__main__':
