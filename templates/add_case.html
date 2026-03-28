@@ -19,6 +19,10 @@
     <main class="container">
         <div class="form-card">
             <h2>Add New Case</h2>
+
+            <!-- Back button -->
+            <a href="{{ url_for('dashboard') }}" class="btn back-btn">← Back to Dashboard</a>
+
             <form method="POST" class="case-form">
                 <div class="form-group">
                     <label for="case_number">Case Number</label>
@@ -47,22 +51,19 @@
                         <option value="Pending">Pending</option>
                         <option value="Closed">Closed</option>
                     </select>
+
                     <label for="case_type">Case Type</label>
-                        <select id="case_type" name="case_type" required>
-                            <option value="">-- Select Case Type --</option>
-                            <option value="RTC">RTC</option>
-                            <option value="1st MCTC">1st MUNICIPAL CIRCUIT TRIAL COURT</option>
-                            <option value="2nd MCTC">2nd MUNICIPAL CIRCUIT TRIAL COURT</option>
-                        </select>
+                    <select id="case_type" name="case_type" required>
+                        <option value="">-- Select Case Type --</option>
+                        <option value="RTC">RTC</option>
+                        <option value="1st MCTC">1st MUNICIPAL CIRCUIT TRIAL COURT</option>
+                        <option value="2nd MCTC">2nd MUNICIPAL CIRCUIT TRIAL COURT</option>
+                    </select>
                 </div>
-            
 
                 <button type="submit" class="btn submit-btn">Add Case</button>
             </form>
         </div>
     </main>
-
-    
-</div>
 </body>
 </html>
