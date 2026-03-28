@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Case</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Edit Case</h2>
+        <form method="POST" class="case-form">
+
+                        <label>Document</label>
+            {% if case.document_url %}
+                <div style="margin-bottom:10px;">
+                    <a href="{{ signed_url }}" target="_blank">
+                        <img src="{{ signed_url }}" alt="Case Document" width="100" style="border-radius:4px;">
+                    </a>
+                </div>
+                <input type="checkbox" name="delete_document" value="yes"> Delete current document<br><br>
+            {% endif %}
+
+            <input type="file" name="document" accept="image/*">
+            <p style="font-size:12px;color:gray;">Choose a file to replace the current document (optional)</p>
+            <label>Case Number</label>
+            <input type="text" name="case_number" value="{{ case.case_number }}" required>
+
+            <label>Case Title</label>
+            <input type="text" name="case_title" value="{{ case.case_title }}" required>
+
+            <!-- ✅ FIX ADDED HERE -->
+            <label>Case Type</label>
+            <select name="case_type" required>
+                <option value="RTC" {% if case.case_type == "RTC" %}selected{% endif %}>RTC</option>
+                <option value="1st MCTC" {% if case.case_type == "1st MCTC" %}selected{% endif %}>1st MUNICIPAL CIRCUIT TRIAL COURT</option>
+                <option value="2nd MCTC" {% if case.case_type == "2nd MCTC" %}selected{% endif %}>2nd MUNICIPAL CIRCUIT TRIAL COURT</option>
+            </select>
+
+            <label>Complainant</label>
+            <input type="text" name="complainant" value="{{ case.complainant }}" required>
+
+            <label>Respondent</label>
+            <input type="text" name="respondent" value="{{ case.respondent }}" required>
+
+            <label>Status</label>
+            <select name="status" required>
+                <option value="Open" {% if case.status == "Open" %}selected{% endif %}>Open</option>
+                <option value="Pending" {% if case.status == "Pending" %}selected{% endif %}>Pending</option>
+                <option value="Closed" {% if case.status == "Closed" %}selected{% endif %}>Closed</option>
+            </select>
+
+            <button type="submit">Update Case</button>
+        </form>
+    </div>
+</body>
+</html>

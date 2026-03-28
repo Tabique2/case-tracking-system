@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Case Tracking System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header>
+    <div class="header-container">
+        <h1>Case Tracking Dashboard</h1>
+        <div class="header-actions">
+            <span>Welcome, {{ user }}</span>
+            <a href="{{ url_for('add_case') }}" class="btn">Add Case</a>
+            <a href="{{ url_for('logout') }}" class="btn logout">Logout</a>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <form method="GET" action="{{ url_for('dashboard') }}">
+            <label>Filter by Case Type:</label>
+            <select name="case_type" onchange="this.form.submit()">
+                <option value="">All</option>
+                <option value="RTC" {% if selected_type == 'RTC' %}selected{% endif %}>RTC</option>
+                <option value="1st MCTC" {% if selected_type == '1st MCTC' %}selected{% endif %}>1st MCTC</option>
+                <option value="2nd MCTC" {% if selected_type == '2nd MCTC' %}selected{% endif %}>2nd MCTC</option>
+            </select>
+        </form>
+    </div>
+
+    <h2>Cases</h2>
+
+    {% if cases %}
+    <table>
+        <thead>
+            <tr>
+                <th>Document</th>
+                <th>ID</th>
+                <th>Case Number</th>
+                <th>Title</th>
+                <th>Case Type</th>
+                <th>Complainant</th>
+                <th>Respondent</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for case in cases %}
+            <tr>
+                <!-- Document Column -->
+                <td class="document-cell">
+                    {% if case.signed_url %}
+                        <a href="{{ case.signed_url }}" target="_blank">
+                            <img src="{{ case.signed_url }}" alt="Case Document" class="document-img">
+                        </a>
+                    {% else %}
+                        {% if session.role == 'admin' %}
+                        <form class="upload-form" method="POST" action="{{ url_for('upload_document', case_id=case.id) }}" enctype="multipart/form-data">
+                            <input type="file" name="document" accept="image/*" required>
+                            <button type="submit" class="btn small">Upload</button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                </td>
+
+                <td>{{ case.id }}</td>
+                <td>{{ case.case_number }}</td>
+                <td>{{ case.case_title }}</td>
+
+                <!-- Case Type Badge -->
+                <td>
+                    <span class="badge 
+                        {% if case.case_type == 'RTC' %}rtc
+                        {% elif case.case_type == '1st MCTC' %}first-mctc
+                        {% elif case.case_type == '2nd MCTC' %}second-mctc
+                        {% endif %}">
+                        {{ case.case_type }}
+                    </span>
+                </td>
+
+                <td>{{ case.complainant }}</td>
+                <td>{{ case.respondent }}</td>
+
+                <!-- Status Badge -->
+                <td>
+                    <span class="status 
+                        {% if case.status == 'Open' %}open
+                        {% elif case.status == 'Pending' %}pending
+                        {% elif case.status == 'Closed' %}closed
+                        {% endif %}">
+                        {{ case.status }}
+                    </span>
+                </td>
+
+                <!-- Actions -->
+                <td>
+                    <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn small">Edit</a>
+                    <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn small danger">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p>No cases found.</p>
+    {% endif %}
+</main>
+
+</body>
+</html>
