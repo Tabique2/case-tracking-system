@@ -53,6 +53,7 @@
         .status.pending { color: orange; font-weight: bold; }
         .status.closed { color: red; font-weight: bold; }
     </style>
+</div>
 </head>
 <body>
 
@@ -63,6 +64,7 @@
             <span>Welcome, {{ user }}</span>
             <a href="{{ url_for('add_case') }}" class="btn">Add Case</a>
             <a href="{{ url_for('logout') }}" class="btn logout">Logout</a>
+            <a href="{{ url_for('activity_logs') }}" class="btn">Activity Logs</a>
         </div>
     </div>
 </header>
