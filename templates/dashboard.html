@@ -1,491 +1,411 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Case Tracking System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        /* ── Responsive Header ── */
-        .header-container {
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .header-container h1 { font-size: clamp(15px, 3vw, 22px); }
-        .header-actions { flex-wrap: wrap; gap: 6px; }
-        .header-actions a, .header-actions span {
-            font-size: clamp(11px, 2vw, 13px);
-            padding: 6px 10px;
-        }
+{% extends "layout.html" %}
+{% block title %}Cases{% endblock %}
+{% block page_title %}Cases{% endblock %}
+{% block extra_style %}
+<style>
+    /* ── Top Bar ── */
+    .cases-topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+    }
+    .filter-group {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        background: white; padding: 10px 16px; border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .filter-group label { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-group select {
+        padding: 7px 12px; border: 1.5px solid #e0e4ea;
+        border-radius: 7px; font-size: 13px; background: #f8f9fb;
+        color: #333; cursor: pointer; transition: border-color 0.2s;
+    }
+    .filter-group select:focus { border-color: #2e5fad; outline: none; }
+    .btn-add {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 10px 20px; background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+        color: white; border: none; border-radius: 8px; font-size: 14px;
+        font-weight: 700; cursor: pointer; text-decoration: none;
+        box-shadow: 0 2px 8px rgba(30,60,120,0.2); transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-add:hover { opacity: 0.92; transform: translateY(-1px); }
 
-        /* ── Action Buttons ── */
-        .actions-cell {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            min-width: 100px;
-        }
-        .actions-cell form { margin: 0; }
+    /* ── Table ── */
+    .table-card { background: white; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    table thead tr { background: linear-gradient(135deg, #1a3a6b, #2e5fad); }
+    table thead th {
+        padding: 13px 14px; color: white; font-size: 11px;
+        font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+        white-space: nowrap; border: none;
+    }
+    table tbody tr { border-bottom: 1px solid #f0f2f5; transition: background 0.15s; }
+    table tbody tr:last-child { border-bottom: none; }
+    table tbody tr:hover { background: #f8f9fb; }
+    table tbody td { padding: 12px 14px; font-size: 13px; color: #333; vertical-align: middle; white-space: nowrap; }
 
-        .btn-action {
-            display: block;
-            width: 100%;
-            padding: 5px 10px;
-            font-size: 12px;
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            transition: opacity 0.2s;
-        }
-        .btn-action:hover { opacity: 0.85; }
-        .btn-edit    { background-color: #007BFF; color: white; }
-        .btn-delete  { background-color: #dc3545; color: white; }
-        .btn-borrow  { background-color: #f39c12; color: white; }
-        .btn-return  { background-color: #27ae60; color: white; }
-        .btn-dispose { background-color: #c0392b; color: white; }
+    /* ── Badges ── */
+    .badge-pill {
+        display: inline-block; padding: 4px 11px; border-radius: 20px;
+        font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+    }
+    .badge-rtc        { background: #dbeafe; color: #1e40af; }
+    .badge-first-mctc { background: #dcfce7; color: #166534; }
+    .badge-second-mctc{ background: #ffedd5; color: #9a3412; }
 
-        /* ── Badges ── */
-        .file-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            color: white;
-        }
-        .file-badge.in-storage { background-color: #27ae60; }
-        .file-badge.borrowed   { background-color: #f39c12; }
-        .file-badge.disposed   { background-color: #e74c3c; }
+    .status-pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 11px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+    .status-open    { background: #dcfce7; color: #166534; }
+    .status-open::before    { background: #16a34a; }
+    .status-pending { background: #fef9c3; color: #854d0e; }
+    .status-pending::before { background: #ca8a04; }
+    .status-closed  { background: #f1f5f9; color: #475569; }
+    .status-closed::before  { background: #94a3b8; }
 
-        /* ── Modal ── */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-            box-sizing: border-box;
-        }
-        .modal-box {
-            background: white;
-            padding: 24px;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 380px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-        }
-        .modal-box h5 { margin: 0 0 16px; font-size: 16px; color: #333; }
-        .modal-box label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; }
-        .modal-box select,
-        .modal-box input[type="text"] {
-            width: 100%;
-            padding: 7px 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 13px;
-            margin-bottom: 12px;
-            box-sizing: border-box;
-        }
-        .modal-actions { display: flex; gap: 8px; margin-top: 4px; }
-        .modal-actions button {
-            flex: 1;
-            padding: 9px;
-            font-size: 13px;
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .modal-confirm-return  { background-color: #27ae60; color: white; }
-        .modal-confirm-dispose { background-color: #c0392b; color: white; }
-        .modal-cancel { background-color: #aaa; color: white; }
+    .file-pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 11px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .file-in-storage { background: #dcfce7; color: #166534; }
+    .file-borrowed   { background: #fff7ed; color: #9a3412; }
+    .file-disposed   { background: #fee2e2; color: #991b1b; }
 
-        /* ── Desktop Table ── */
-        .table-wrapper { overflow-x: auto; }
-        table th, table td { vertical-align: middle; white-space: nowrap; }
+    /* ── Doc Cell ── */
+    .doc-thumb {
+        width: 64px; height: 48px; object-fit: cover;
+        border-radius: 6px; border: 1px solid #e0e4ea;
+        display: block; transition: transform 0.15s;
+    }
+    .doc-thumb:hover { transform: scale(1.05); }
+    .doc-cell { text-align: center; }
 
-        /* ── Mobile Cards ── */
-        .mobile-cards { display: none; }
+    /* ── Action Buttons ── */
+    .actions-cell { display: flex; flex-direction: column; gap: 4px; min-width: 90px; }
+    .actions-cell form { margin: 0; }
+    .btn-act {
+        display: block; width: 100%; padding: 5px 8px;
+        font-size: 11px; font-weight: 700; border: none;
+        border-radius: 5px; cursor: pointer; text-align: center;
+        text-decoration: none; transition: opacity 0.15s, transform 0.1s;
+        letter-spacing: 0.2px;
+    }
+    .btn-act:hover { opacity: 0.85; transform: translateY(-1px); }
+    .act-edit    { background: #dbeafe; color: #1e40af; }
+    .act-delete  { background: #fee2e2; color: #991b1b; }
+    .act-borrow  { background: #fff7ed; color: #9a3412; }
+    .act-return  { background: #dcfce7; color: #166534; }
+    .act-dispose { background: #fce7f3; color: #9d174d; }
+    .act-upload  { background: #f1f5f9; color: #475569; }
 
-        .case-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 16px;
-            overflow: hidden;
-        }
+    /* ── Upload form ── */
+    .upload-inline input[type="file"] { font-size: 10px; width: 100%; margin-bottom: 3px; }
 
-        .case-card-header {
-            background: #007BFF;
-            color: white;
-            padding: 10px 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-            font-weight: bold;
-        }
+    /* ── Modal ── */
+    .modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(15,25,50,0.55); z-index: 999;
+        justify-content: center; align-items: center; padding: 16px;
+    }
+    .modal-card {
+        background: white; border-radius: 14px; width: 100%; max-width: 400px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden;
+    }
+    .modal-header {
+        padding: 18px 22px 14px; border-bottom: 1px solid #f0f2f5;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-header h5 { margin: 0; font-size: 15px; font-weight: 700; color: #1a2a4a; }
+    .modal-close {
+        background: none; border: none; font-size: 18px; cursor: pointer;
+        color: #aaa; line-height: 1; padding: 0;
+    }
+    .modal-close:hover { color: #333; }
+    .modal-body { padding: 20px 22px; }
+    .modal-body label { font-size: 12px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px; }
+    .modal-body select, .modal-body input[type="text"] {
+        width: 100%; padding: 9px 12px; border: 1.5px solid #e0e4ea;
+        border-radius: 7px; font-size: 13px; margin-bottom: 14px;
+        box-sizing: border-box; transition: border-color 0.2s;
+    }
+    .modal-body select:focus, .modal-body input:focus { border-color: #2e5fad; outline: none; }
+    .modal-footer { padding: 14px 22px; border-top: 1px solid #f0f2f5; display: flex; gap: 10px; }
+    .modal-footer button {
+        flex: 1; padding: 10px; font-size: 13px; font-weight: 700;
+        border: none; border-radius: 7px; cursor: pointer; transition: opacity 0.2s;
+    }
+    .modal-footer button:hover { opacity: 0.88; }
+    .btn-modal-borrow  { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .btn-modal-return  { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+    .btn-modal-dispose { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+    .btn-modal-cancel  { background: #f1f5f9; color: #475569; }
 
-        .case-card-body { padding: 14px; }
+    /* ── Empty State ── */
+    .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
 
-        .case-card-body .card-doc {
-            text-align: center;
-            margin-bottom: 12px;
-        }
+    /* ── Mobile Cards ── */
+    .mobile-cards { display: none; }
+    .case-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 14px; overflow: hidden; }
+    .case-card-header {
+        background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+        color: white; padding: 12px 16px;
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: 13px; font-weight: 700;
+    }
+    .case-card-body { padding: 14px; }
+    .card-doc-img { width: 100%; max-height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
+    .card-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+    .card-row:last-of-type { border-bottom: none; }
+    .card-row .lbl { color: #94a3b8; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+    .card-row .val { font-weight: 600; text-align: right; color: #1a2a4a; }
+    .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .card-actions form { margin: 0; }
+    .card-actions .btn-act { font-size: 12px; padding: 8px; }
+    .card-actions .full { grid-column: 1 / -1; }
 
-        .case-card-body .card-doc img {
-            width: 100%;
-            max-width: 200px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
+    @media (max-width: 768px) {
+        .table-card { display: none; }
+        .mobile-cards { display: block; }
+        .cases-topbar { flex-direction: column; align-items: stretch; }
+        .filter-group { justify-content: space-between; }
+        .btn-add { text-align: center; justify-content: center; }
+    }
+</style>
+{% endblock %}
+{% block content %}
 
-        .card-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 13px;
-        }
-        .card-row:last-of-type { border-bottom: none; }
-        .card-row .label { color: #888; font-weight: 600; font-size: 11px; text-transform: uppercase; }
-        .card-row .value { font-weight: 500; text-align: right; }
+<div class="cases-topbar">
+    <form method="GET" action="{{ url_for('dashboard') }}" class="filter-group">
+        <label>Filter by Type</label>
+        <select name="case_type" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            <option value="RTC"      {% if selected_type == 'RTC' %}selected{% endif %}>RTC</option>
+            <option value="1st MCTC" {% if selected_type == '1st MCTC' %}selected{% endif %}>1st MCTC</option>
+            <option value="2nd MCTC" {% if selected_type == '2nd MCTC' %}selected{% endif %}>2nd MCTC</option>
+        </select>
+    </form>
+    <a href="{{ url_for('add_case') }}" class="btn-add">＋ Add Case</a>
+</div>
 
-        .card-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 14px;
-        }
-        .card-actions form { margin: 0; }
-        .card-actions .btn-action { font-size: 13px; padding: 8px; }
-        .card-actions .full-width { grid-column: 1 / -1; }
+{% if cases %}
 
-        .upload-mobile input[type="file"] { width: 100%; font-size: 12px; margin-bottom: 6px; }
-
-        /* ── Responsive Breakpoint ── */
-        @media (max-width: 768px) {
-            .table-wrapper { display: none; }
-            .mobile-cards  { display: block; }
-
-            .filter-section form {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            .filter-section select { width: 100%; padding: 10px; font-size: 14px; }
-        }
-    </style>
-</head>
-<body>
-
-<header>
-    <div class="header-container">
-        <h1>⚖ Case Tracking Dashboard</h1>
-        <div class="header-actions">
-            <span>👤 {{ user }}</span>
-            <a href="{{ url_for('add_case') }}" class="btn">+ Add Case</a>
-            <a href="/manage-users" class="btn">Manage Users</a>
-            <a href="{{ url_for('activity_logs') }}" class="btn">Activity Logs</a>
-            <a href="{{ url_for('logout') }}" class="btn logout">Logout</a>
-        </div>
-    </div>
-</header>
-
-<main class="container">
-    <!-- Filter -->
-    <div class="filter-section">
-        <form method="GET" action="{{ url_for('dashboard') }}">
-            <label>Filter by Case Type:</label>
-            <select name="case_type" onchange="this.form.submit()">
-                <option value="">All</option>
-                <option value="RTC"      {% if selected_type == 'RTC' %}selected{% endif %}>RTC</option>
-                <option value="1st MCTC" {% if selected_type == '1st MCTC' %}selected{% endif %}>1st MCTC</option>
-                <option value="2nd MCTC" {% if selected_type == '2nd MCTC' %}selected{% endif %}>2nd MCTC</option>
-            </select>
-        </form>
-    </div>
-
-    <h2>Cases</h2>
-
-    {% if cases %}
-
-    <!-- ── DESKTOP TABLE ── -->
-    <div class="table-wrapper">
-    <table>
-        <thead>
-            <tr>
-                <th>Document</th>
-                <th>Case Number</th>
-                <th>Title</th>
-                <th>Case Type</th>
-                <th>Complainant</th>
-                <th>Respondent</th>
-                <th>Status</th>
-                <th>File Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for case in cases %}
-            <tr>
-                <td class="document-cell">
-                    {% if case.signed_url %}
-                        <a href="{{ case.signed_url }}" target="_blank">
-                            <img src="{{ case.signed_url }}" alt="Document" class="document-img">
-                        </a>
-                        <form method="POST" action="/delete-picture/{{ case.id }}" style="margin-top:5px">
-                            <button type="submit" class="btn-action btn-delete" style="font-size:11px"
-                                onclick="return confirm('Delete this picture?')">🗑 Remove</button>
-                        </form>
-                    {% else %}
-                        {% if session.role == 'admin' %}
-                        <form class="upload-form" method="POST" action="{{ url_for('upload_document', case_id=case.id) }}" enctype="multipart/form-data">
-                            <input type="file" name="document" accept="image/*" required>
-                            <button type="submit" class="btn-action btn-edit" style="margin-top:4px">Upload</button>
-                        </form>
-                        {% else %}
-                            <span style="color:#aaa;font-size:12px">No file</span>
-                        {% endif %}
-                    {% endif %}
-                </td>
-                <td>{{ case.case_number }}</td>
-                <td>{{ case.case_title }}</td>
-                <td>
-                    <span class="badge {% if case.case_type == 'RTC' %}rtc{% elif case.case_type == '1st MCTC' %}first-mctc{% elif case.case_type == '2nd MCTC' %}second-mctc{% endif %}">
-                        {{ case.case_type }}
-                    </span>
-                </td>
-                <td>{{ case.complainant }}</td>
-                <td>{{ case.respondent }}</td>
-                <td>
-                    <span class="status {% if case.status == 'Open' %}open{% elif case.status == 'Pending' %}pending{% elif case.status == 'Closed' %}closed{% endif %}">
-                        {{ case.status }}
-                    </span>
-                </td>
-                <td>
-                    {% if case.file_status == 'borrowed' %}<span class="file-badge borrowed">Borrowed</span>
-                    {% elif case.file_status == 'disposed' %}<span class="file-badge disposed">Disposed</span>
-                    {% else %}<span class="file-badge in-storage">In Storage</span>{% endif %}
-                </td>
-                <td>
-                    <div class="actions-cell">
-                        <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn-action btn-edit">Edit</a>
-                        <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn-action btn-delete"
-                            onclick="return confirm('Delete this case?')">Delete</a>
-                        {% if case.file_status != 'disposed' %}
-                            {% if case.file_status == 'in_storage' or case.file_status == None %}
-                            <form method="POST" action="/staff-borrow/{{ case.id }}">
-                                <input type="hidden" name="notes" value="">
-                                <button type="submit" class="btn-action btn-borrow"
-                                    onclick="return confirm('Borrow this file?')">Borrow</button>
-                            </form>
-                            {% endif %}
-                            {% if case.file_status == 'borrowed' %}
-                            <button class="btn-action btn-return"
-                                onclick="document.getElementById('return-modal-{{ case.id }}').style.display='flex'">Return</button>
-                            {% endif %}
-                            <button class="btn-action btn-dispose"
-                                onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'">Dispose</button>
-                        {% else %}
-                            <span class="file-badge disposed" style="font-size:11px">Disposed</span>
-                        {% endif %}
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
-
-    <!-- ── MOBILE CARDS ── -->
-    <div class="mobile-cards">
+<!-- Desktop Table -->
+<div class="table-card">
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Doc</th>
+            <th>Case No.</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Complainant</th>
+            <th>Respondent</th>
+            <th>Status</th>
+            <th>File Status</th>
+            <th>Borrowed By</th>
+            <th>Date Borrowed</th>
+            <th>Return Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
         {% for case in cases %}
-        <div class="case-card">
-            <div class="case-card-header">
-                <span>📁 {{ case.case_number }}</span>
-                <span class="badge {% if case.case_type == 'RTC' %}rtc{% elif case.case_type == '1st MCTC' %}first-mctc{% elif case.case_type == '2nd MCTC' %}second-mctc{% endif %}">
+        <tr>
+            <td class="doc-cell">
+                {% if case.signed_url %}
+                    <a href="{{ case.signed_url }}" target="_blank">
+                        <img src="{{ case.signed_url }}" alt="Doc" class="doc-thumb">
+                    </a>
+                    <form method="POST" action="/delete-picture/{{ case.id }}" style="margin-top:4px">
+                        <button type="submit" class="btn-act act-delete" style="font-size:10px" onclick="return confirm('Delete picture?')">🗑 Remove</button>
+                    </form>
+                {% else %}
+                    <form class="upload-inline" method="POST" action="{{ url_for('upload_document', case_id=case.id) }}" enctype="multipart/form-data">
+                        <input type="file" name="document" accept="image/*" required>
+                        <button type="submit" class="btn-act act-upload">Upload</button>
+                    </form>
+                {% endif %}
+            </td>
+            <td><strong>{{ case.case_number }}</strong></td>
+            <td style="max-width:180px;white-space:normal;line-height:1.4">{{ case.case_title }}</td>
+            <td>
+                <span class="badge-pill {% if case.case_type == 'RTC' %}badge-rtc{% elif case.case_type == '1st MCTC' %}badge-first-mctc{% elif case.case_type == '2nd MCTC' %}badge-second-mctc{% endif %}">
                     {{ case.case_type }}
                 </span>
-            </div>
-            <div class="case-card-body">
-
-                {% if case.signed_url %}
-                <div class="card-doc">
-                    <a href="{{ case.signed_url }}" target="_blank">
-                        <img src="{{ case.signed_url }}" alt="Document">
-                    </a>
-                </div>
-                {% endif %}
-
-                <div class="card-row">
-                    <span class="label">Title</span>
-                    <span class="value">{{ case.case_title }}</span>
-                </div>
-                <div class="card-row">
-                    <span class="label">Complainant</span>
-                    <span class="value">{{ case.complainant }}</span>
-                </div>
-                <div class="card-row">
-                    <span class="label">Respondent</span>
-                    <span class="value">{{ case.respondent }}</span>
-                </div>
-                <div class="card-row">
-                    <span class="label">Status</span>
-                    <span class="value">
-                        <span class="status {% if case.status == 'Open' %}open{% elif case.status == 'Pending' %}pending{% elif case.status == 'Closed' %}closed{% endif %}">
-                            {{ case.status }}
-                        </span>
-                    </span>
-                </div>
-                <div class="card-row">
-                    <span class="label">File Status</span>
-                    <span class="value">
-                        {% if case.file_status == 'borrowed' %}<span class="file-badge borrowed">Borrowed</span>
-                        {% elif case.file_status == 'disposed' %}<span class="file-badge disposed">Disposed</span>
-                        {% else %}<span class="file-badge in-storage">In Storage</span>{% endif %}
-                    </span>
-                </div>
-
-                <!-- Mobile Actions -->
-                <div class="card-actions">
-                    <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn-action btn-edit">Edit</a>
-                    <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn-action btn-delete"
-                        onclick="return confirm('Delete this case?')">Delete</a>
-
-                    {% if case.signed_url %}
-                    <form method="POST" action="/delete-picture/{{ case.id }}" class="full-width">
-                        <button type="submit" class="btn-action btn-delete"
-                            onclick="return confirm('Delete this picture?')">🗑 Remove Picture</button>
-                    </form>
-                    {% else %}
-                    <form class="upload-mobile full-width" method="POST" action="{{ url_for('upload_document', case_id=case.id) }}" enctype="multipart/form-data">
-                        <input type="file" name="document" accept="image/*" required>
-                        <button type="submit" class="btn-action btn-edit">Upload</button>
-                    </form>
-                    {% endif %}
-
+            </td>
+            <td>{{ case.complainant }}</td>
+            <td>{{ case.respondent }}</td>
+            <td>
+                <span class="status-pill {% if case.status == 'Open' %}status-open{% elif case.status == 'Pending' %}status-pending{% elif case.status == 'Closed' %}status-closed{% endif %}">
+                    {{ case.status }}
+                </span>
+            </td>
+            <td>
+                {% if case.file_status == 'borrowed' %}<span class="file-pill file-borrowed">📤 Borrowed</span>
+                {% elif case.file_status == 'disposed' %}<span class="file-pill file-disposed">🗑 Disposed</span>
+                {% else %}<span class="file-pill file-in-storage">🗄 In Storage</span>{% endif %}
+            </td>
+            <td style="font-size:12px;color:#555">{{ case.borrow_info.performed_by if case.borrow_info else '—' }}</td>
+            <td style="font-size:12px;color:#555">{{ case.borrow_info.created_at[:19].replace('T',' ') if case.borrow_info else '—' }}</td>
+            <td style="font-size:12px;color:#555">{{ case.borrow_info.return_date[:19].replace('T',' ') if case.borrow_info and case.borrow_info.return_date else '—' }}</td>
+            <td>
+                <div class="actions-cell">
+                    <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn-act act-edit">✏ Edit</a>
+                    <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn-act act-delete" onclick="return confirm('Delete this case?')">🗑 Delete</a>
                     {% if case.file_status != 'disposed' %}
                         {% if case.file_status == 'in_storage' or case.file_status == None %}
-                        <form method="POST" action="/staff-borrow/{{ case.id }}" class="full-width">
-                            <input type="hidden" name="notes" value="">
-                            <button type="submit" class="btn-action btn-borrow"
-                                onclick="return confirm('Borrow this file?')">Borrow</button>
-                        </form>
+                        <button class="btn-act act-borrow" onclick="document.getElementById('borrow-modal-{{ case.id }}').style.display='flex'">📤 Borrow</button>
                         {% endif %}
                         {% if case.file_status == 'borrowed' %}
-                        <button class="btn-action btn-return full-width"
-                            onclick="document.getElementById('return-modal-{{ case.id }}').style.display='flex'">Return</button>
+                        <button class="btn-act act-return" onclick="document.getElementById('return-modal-{{ case.id }}').style.display='flex'">↩ Return</button>
                         {% endif %}
-                        <button class="btn-action btn-dispose full-width"
-                            onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'">Dispose</button>
+                        <button class="btn-act act-dispose" onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'">🗑 Dispose</button>
+                    {% else %}
+                        <span class="file-pill file-disposed" style="font-size:10px">Disposed</span>
                     {% endif %}
                 </div>
-
-            </div>
-        </div>
-
-        <!-- Return Modal -->
-        {% if case.file_status == 'borrowed' %}
-        <div id="return-modal-{{ case.id }}" class="modal-overlay">
-            <div class="modal-box">
-                <h5>↩ Return File — {{ case.case_number }}</h5>
-                <form method="POST" action="/staff-return/{{ case.id }}">
-                    <label>Set Case Status After Return:</label>
-                    <select name="case_status">
-                        <option value="Open">Open</option>
-                        <option value="Closed">Closed</option>
-                    </select>
-                    <label>Notes (optional):</label>
-                    <input type="text" name="notes" placeholder="Return notes...">
-                    <div class="modal-actions">
-                        <button type="submit" class="modal-confirm-return">Confirm Return</button>
-                        <button type="button" class="modal-cancel"
-                            onclick="document.getElementById('return-modal-{{ case.id }}').style.display='none'">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Dispose Modal -->
-        {% if case.file_status != 'disposed' %}
-        <div id="dispose-modal-{{ case.id }}" class="modal-overlay">
-            <div class="modal-box">
-                <h5>🗑 Dispose File — {{ case.case_number }}</h5>
-                <form method="POST" action="/staff-disposed/{{ case.id }}">
-                    <label>Notes (optional):</label>
-                    <input type="text" name="notes" placeholder="Disposal reason...">
-                    <div class="modal-actions">
-                        <button type="submit" class="modal-confirm-dispose">Confirm Dispose</button>
-                        <button type="button" class="modal-cancel"
-                            onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-
+            </td>
+        </tr>
         {% endfor %}
-    </div>
+    </tbody>
+</table>
+</div>
+</div>
 
-    <!-- Desktop Modals -->
-    <div class="desktop-modals">
-        {% for case in cases %}
-        {% if case.file_status == 'borrowed' %}
-        <div id="return-modal-{{ case.id }}" class="modal-overlay">
-            <div class="modal-box">
-                <h5>↩ Return File — {{ case.case_number }}</h5>
-                <form method="POST" action="/staff-return/{{ case.id }}">
-                    <label>Set Case Status After Return:</label>
-                    <select name="case_status">
-                        <option value="Open">Open</option>
-                        <option value="Closed">Closed</option>
-                    </select>
-                    <label>Notes (optional):</label>
-                    <input type="text" name="notes" placeholder="Return notes...">
-                    <div class="modal-actions">
-                        <button type="submit" class="modal-confirm-return">Confirm Return</button>
-                        <button type="button" class="modal-cancel"
-                            onclick="document.getElementById('return-modal-{{ case.id }}').style.display='none'">Cancel</button>
-                    </div>
+<!-- Mobile Cards -->
+<div class="mobile-cards">
+    {% for case in cases %}
+    <div class="case-card">
+        <div class="case-card-header">
+            <span>📁 {{ case.case_number }}</span>
+            <span class="badge-pill {% if case.case_type == 'RTC' %}badge-rtc{% elif case.case_type == '1st MCTC' %}badge-first-mctc{% elif case.case_type == '2nd MCTC' %}badge-second-mctc{% endif %}" style="font-size:10px">{{ case.case_type }}</span>
+        </div>
+        <div class="case-card-body">
+            {% if case.signed_url %}
+            <a href="{{ case.signed_url }}" target="_blank"><img src="{{ case.signed_url }}" alt="Doc" class="card-doc-img"></a>
+            {% endif %}
+            <div class="card-row"><span class="lbl">Title</span><span class="val">{{ case.case_title }}</span></div>
+            <div class="card-row"><span class="lbl">Complainant</span><span class="val">{{ case.complainant }}</span></div>
+            <div class="card-row"><span class="lbl">Respondent</span><span class="val">{{ case.respondent }}</span></div>
+            <div class="card-row"><span class="lbl">Status</span><span class="val"><span class="status-pill {% if case.status == 'Open' %}status-open{% elif case.status == 'Pending' %}status-pending{% elif case.status == 'Closed' %}status-closed{% endif %}">{{ case.status }}</span></span></div>
+            <div class="card-row"><span class="lbl">File</span><span class="val">
+                {% if case.file_status == 'borrowed' %}<span class="file-pill file-borrowed">📤 Borrowed</span>
+                {% elif case.file_status == 'disposed' %}<span class="file-pill file-disposed">🗑 Disposed</span>
+                {% else %}<span class="file-pill file-in-storage">🗄 In Storage</span>{% endif %}
+            </span></div>
+            {% if case.borrow_info %}
+            <div class="card-row"><span class="lbl">Borrowed By</span><span class="val">{{ case.borrow_info.performed_by }}</span></div>
+            <div class="card-row"><span class="lbl">Date Borrowed</span><span class="val">{{ case.borrow_info.created_at[:10] }}</span></div>
+            <div class="card-row"><span class="lbl">Return Date</span><span class="val">{{ case.borrow_info.return_date[:10] if case.borrow_info.return_date else '—' }}</span></div>
+            {% endif %}
+            <div class="card-actions">
+                <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn-act act-edit">✏ Edit</a>
+                <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn-act act-delete" onclick="return confirm('Delete?')">🗑 Delete</a>
+                {% if case.signed_url %}
+                <form method="POST" action="/delete-picture/{{ case.id }}" class="full">
+                    <button type="submit" class="btn-act act-delete" onclick="return confirm('Delete picture?')">🗑 Remove Picture</button>
                 </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('upload_document', case_id=case.id) }}" enctype="multipart/form-data" class="full">
+                    <input type="file" name="document" accept="image/*" required style="font-size:11px;margin-bottom:4px;width:100%">
+                    <button type="submit" class="btn-act act-upload">Upload</button>
+                </form>
+                {% endif %}
+                {% if case.file_status != 'disposed' %}
+                    {% if case.file_status == 'in_storage' or case.file_status == None %}
+                    <button class="btn-act act-borrow full" onclick="document.getElementById('borrow-modal-{{ case.id }}').style.display='flex'">📤 Borrow</button>
+                    {% endif %}
+                    {% if case.file_status == 'borrowed' %}
+                    <button class="btn-act act-return full" onclick="document.getElementById('return-modal-{{ case.id }}').style.display='flex'">↩ Return</button>
+                    {% endif %}
+                    <button class="btn-act act-dispose full" onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'">🗑 Dispose</button>
+                {% endif %}
             </div>
         </div>
-        {% endif %}
-        {% if case.file_status != 'disposed' %}
-        <div id="dispose-modal-{{ case.id }}" class="modal-overlay">
-            <div class="modal-box">
-                <h5>🗑 Dispose File — {{ case.case_number }}</h5>
-                <form method="POST" action="/staff-disposed/{{ case.id }}">
-                    <label>Notes (optional):</label>
-                    <input type="text" name="notes" placeholder="Disposal reason...">
-                    <div class="modal-actions">
-                        <button type="submit" class="modal-confirm-dispose">Confirm Dispose</button>
-                        <button type="button" class="modal-cancel"
-                            onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-        {% endfor %}
     </div>
+    {% endfor %}
+</div>
 
-    {% else %}
-        <p>No cases found.</p>
-    {% endif %}
-</main>
+<!-- Modals -->
+{% for case in cases %}
+{% if case.file_status == 'in_storage' or case.file_status == None %}
+<div id="borrow-modal-{{ case.id }}" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h5>📤 Borrow File — {{ case.case_number }}</h5>
+            <button class="modal-close" onclick="document.getElementById('borrow-modal-{{ case.id }}').style.display='none'">✕</button>
+        </div>
+        <form method="POST" action="/staff-borrow/{{ case.id }}">
+            <div class="modal-body">
+                <label>Borrowed By</label>
+                <input type="text" name="borrowed_by" placeholder="Enter name of borrower" required>
+                <label>Notes (optional)</label>
+                <input type="text" name="notes" placeholder="Reason for borrowing...">
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn-modal-borrow">Confirm Borrow</button>
+                <button type="button" class="btn-modal-cancel" onclick="document.getElementById('borrow-modal-{{ case.id }}').style.display='none'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% if case.file_status == 'borrowed' %}
+<div id="return-modal-{{ case.id }}" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h5>↩ Return File — {{ case.case_number }}</h5>
+            <button class="modal-close" onclick="document.getElementById('return-modal-{{ case.id }}').style.display='none'">✕</button>
+        </div>
+        <form method="POST" action="/staff-return/{{ case.id }}">
+            <div class="modal-body">
+                <label>Set Case Status After Return</label>
+                <select name="case_status">
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                </select>
+                <label>Notes (optional)</label>
+                <input type="text" name="notes" placeholder="Return notes...">
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn-modal-return">Confirm Return</button>
+                <button type="button" class="btn-modal-cancel" onclick="document.getElementById('return-modal-{{ case.id }}').style.display='none'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% if case.file_status != 'disposed' %}
+<div id="dispose-modal-{{ case.id }}" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h5>🗑 Dispose File — {{ case.case_number }}</h5>
+            <button class="modal-close" onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='none'">✕</button>
+        </div>
+        <form method="POST" action="/staff-disposed/{{ case.id }}">
+            <div class="modal-body">
+                <label>Notes (optional)</label>
+                <input type="text" name="notes" placeholder="Disposal reason...">
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn-modal-dispose">Confirm Dispose</button>
+                <button type="button" class="btn-modal-cancel" onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
 
-</body>
-</html>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <p style="font-size:15px;color:#94a3b8">No cases found.</p>
+</div>
+{% endif %}
+
+{% endblock %}
