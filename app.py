@@ -58,9 +58,9 @@ def login():
 
                 # Redirect based on role
                 if user['role'] == 'admin':
-                    return redirect('/dashboard')
+                    return redirect('/home')
                 elif user['role'] == 'staff':
-                    return redirect('/staff-cases')
+                    return redirect('/staff-home')
             else:
                 return "Wrong password ❌"
         else:
@@ -94,7 +94,8 @@ def dashboard():
 
     # Generate signed URL for documents only if user is allowed
     for case in cases:
-        case["signed_url"] = None  # default None
+        case["signed_url"] = None
+        case["borrow_info"] = None
         if case.get("document_url"):
             if session.get('role') == 'admin' or case.get('uploaded_by') == session['user']:
                 filename = case["document_url"]
@@ -102,17 +103,24 @@ def dashboard():
                     signed_url = supabase.storage.from_('case-documents').create_signed_url(filename, 3600)
                     case["signed_url"] = signed_url["signedURL"]
                 except Exception as e:
-                    # File not found in bucket, just skip
                     print(f"Warning: File {filename} not found in bucket: {e}")
             else:
-                # User not allowed to see this file
                 case["signed_url"] = None
+        # Fetch latest borrow transaction
+        tx = supabase.table("file_transactions").select("*").eq("case_id", case["id"]).eq("action", "borrowed").order("created_at", desc=True).limit(1).execute()
+        if tx.data:
+            borrow = tx.data[0]
+            # Find matching return
+            ret = supabase.table("file_transactions").select("return_date").eq("case_id", case["id"]).eq("action", "returned").order("created_at", desc=True).limit(1).execute()
+            borrow["return_date"] = ret.data[0]["return_date"] if ret.data else None
+            case["borrow_info"] = borrow
 
     return render_template(
         "dashboard.html",
         user=session['user'],
         cases=cases,
-        selected_type=case_type
+        selected_type=case_type,
+        active_page='cases'
     )
 
 # Add Case
@@ -124,7 +132,7 @@ def add_case():
     if request.method == 'POST':
         data = {
             "case_number": request.form['case_number'],
-            "case_title": request.form['case_title'],
+            "case_title": request.form['case_category'],
             "case_type": request.form['case_type'],
             "complainant": mask_name(request.form['complainant']),
             "respondent": mask_name(request.form['respondent']),
@@ -296,7 +304,7 @@ def manage_users():
     if 'user' not in session or session.get('role') != 'admin':
         return redirect('/login')
     users = supabase.table("users").select("*").order("id", desc=True).execute().data or []
-    return render_template("manage_users.html", users=users, current_user=session['user'])
+    return render_template("manage_users.html", users=users, current_user=session['user'], active_page='users')
 
 @app.route('/create-user', methods=['POST'])
 def create_user():
@@ -335,6 +343,73 @@ def delete_user(user_id):
     log_activity(session['user'], f"Deleted user: {user['email']}")
     return redirect('/manage-users')
 
+# Home
+@app.route('/home')
+def home_page():
+    if 'user' not in session or session.get('role') != 'admin':
+        return redirect('/login')
+    cases = supabase.table("cases").select("*").execute().data or []
+    users = supabase.table("users").select("*").eq("role", "staff").execute().data or []
+
+    categories = [
+        "PHYSICAL INJURY",
+        "GAMBLING/RA 9287",
+        "MURDER/FRUS. MURDER",
+        "HOMICIDE/FRUSTRATED HOMICIDE",
+        "RECKLESS IMPRUDENCE",
+        "FORESTRY LAW/RA 9262",
+        "DRUGS/RA9165",
+        "LEGAL POSSESSION OF FIREARMS/RA 10591",
+        "RTC APPEALED CASES",
+        "RTC ARCHIVED",
+        "OTHER CRIMES",
+        "SPECIAL PROCEEDING",
+        "CIVIL CASE",
+        "SEXUAL CRIMES RA8353",
+        "ABUSES/RA9262/RA7610"
+    ]
+    category_counts = {cat: sum(1 for c in cases if c.get('case_title', '').upper().startswith(cat.split('/')[0].strip())) for cat in categories}
+
+    return render_template("home.html",
+        total_cases=len(cases),
+        open_cases=sum(1 for c in cases if c.get('status') == 'Open'),
+        pending_cases=sum(1 for c in cases if c.get('status') == 'Pending'),
+        closed_cases=sum(1 for c in cases if c.get('status') == 'Closed'),
+        borrowed_files=sum(1 for c in cases if c.get('file_status') == 'borrowed'),
+        total_users=len(users),
+        categories=categories,
+        category_counts=category_counts,
+        active_page='home'
+    )
+
+# Cases by Category
+@app.route('/cases-by-category')
+def cases_by_category():
+    if 'user' not in session:
+        return redirect('/login')
+    category = request.args.get('category', '')
+    cases = supabase.table("cases").select("*").execute().data or []
+    filtered = [c for c in cases if c.get('case_title', '').upper().startswith(category.split('/')[0].strip())]
+    for case in filtered:
+        case["signed_url"] = None
+        if case.get("document_url"):
+            try:
+                signed = supabase.storage.from_('case-documents').create_signed_url(case['document_url'], 3600)
+                case["signed_url"] = signed["signedURL"]
+            except:
+                pass
+    active_page = 'home'
+    return render_template("cases_by_category.html", cases=filtered, category=category, active_page=active_page)
+
+# Profile
+@app.route('/profile')
+def profile():
+    if 'user' not in session:
+        return redirect('/login')
+    response = supabase.table("users").select("*").eq("email", session['user']).execute()
+    user = response.data[0] if response.data else {}
+    return render_template("profile.html", user=user, active_page='profile')
+
 # Activity Logs
 @app.route('/activity-logs')
 def activity_logs():
@@ -343,7 +418,7 @@ def activity_logs():
 
     response = supabase.table("activity_logs").select("*").order("created_at", desc=True).execute()
     logs = response.data if response.data else []
-    return render_template("activity_logs.html", logs=logs)
+    return render_template("activity_logs.html", logs=logs, active_page='logs')
 
 from staff_routes import staff_bp
 app.register_blueprint(staff_bp)
