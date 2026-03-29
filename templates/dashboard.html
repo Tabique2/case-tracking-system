@@ -2,81 +2,214 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Case Tracking System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        /* Thumbnail for case documents */
-        .document-img {
-            width: 80px;
-            height: auto;
-            object-fit: cover;
+        /* ── Responsive Header ── */
+        .header-container {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-container h1 { font-size: clamp(15px, 3vw, 22px); }
+        .header-actions { flex-wrap: wrap; gap: 6px; }
+        .header-actions a, .header-actions span {
+            font-size: clamp(11px, 2vw, 13px);
+            padding: 6px 10px;
+        }
+
+        /* ── Action Buttons ── */
+        .actions-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 100px;
+        }
+        .actions-cell form { margin: 0; }
+
+        .btn-action {
             display: block;
-            margin-left: 0; /* Align left */
-        }
-
-        .document-cell {
-            width: 100px; /* Keep the column narrow */
-        }
-
-        /* Upload form in table cell */
-        .upload-form input[type="file"] {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .upload-form button {
-            font-size: 0.8rem;
-        }
-
-        /* Table styles */
-        table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-action:hover { opacity: 0.85; }
+        .btn-edit    { background-color: #007BFF; color: white; }
+        .btn-delete  { background-color: #dc3545; color: white; }
+        .btn-borrow  { background-color: #f39c12; color: white; }
+        .btn-return  { background-color: #27ae60; color: white; }
+        .btn-dispose { background-color: #c0392b; color: white; }
+
+        /* ── Badges ── */
+        .file-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .file-badge.in-storage { background-color: #27ae60; }
+        .file-badge.borrowed   { background-color: #f39c12; }
+        .file-badge.disposed   { background-color: #e74c3c; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        .modal-box {
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .modal-box h5 { margin: 0 0 16px; font-size: 16px; color: #333; }
+        .modal-box label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; }
+        .modal-box select,
+        .modal-box input[type="text"] {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+        .modal-actions { display: flex; gap: 8px; margin-top: 4px; }
+        .modal-actions button {
+            flex: 1;
+            padding: 9px;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .modal-confirm-return  { background-color: #27ae60; color: white; }
+        .modal-confirm-dispose { background-color: #c0392b; color: white; }
+        .modal-cancel { background-color: #aaa; color: white; }
+
+        /* ── Desktop Table ── */
+        .table-wrapper { overflow-x: auto; }
+        table th, table td { vertical-align: middle; white-space: nowrap; }
+
+        /* ── Mobile Cards ── */
+        .mobile-cards { display: none; }
+
+        .case-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 16px;
+            overflow: hidden;
         }
 
-        th, td {
-            padding: 8px;
+        .case-card-header {
+            background: #007BFF;
+            color: white;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .case-card-body { padding: 14px; }
+
+        .case-card-body .card-doc {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .case-card-body .card-doc img {
+            width: 100%;
+            max-width: 200px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
             border: 1px solid #ddd;
-            text-align: left;
         }
 
-        th {
-            background-color: #f2f2f2;
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
         }
+        .card-row:last-of-type { border-bottom: none; }
+        .card-row .label { color: #888; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+        .card-row .value { font-weight: 500; text-align: right; }
 
-        .badge.rtc { background-color: #3498db; color: white; padding: 3px 6px; border-radius: 4px; }
-        .badge.first-mctc { background-color: #2ecc71; color: white; padding: 3px 6px; border-radius: 4px; }
-        .badge.second-mctc { background-color: #e67e22; color: white; padding: 3px 6px; border-radius: 4px; }
+        .card-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .card-actions form { margin: 0; }
+        .card-actions .btn-action { font-size: 13px; padding: 8px; }
+        .card-actions .full-width { grid-column: 1 / -1; }
 
-        .status.open { color: green; font-weight: bold; }
-        .status.pending { color: orange; font-weight: bold; }
-        .status.closed { color: red; font-weight: bold; }
+        .upload-mobile input[type="file"] { width: 100%; font-size: 12px; margin-bottom: 6px; }
+
+        /* ── Responsive Breakpoint ── */
+        @media (max-width: 768px) {
+            .table-wrapper { display: none; }
+            .mobile-cards  { display: block; }
+
+            .filter-section form {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .filter-section select { width: 100%; padding: 10px; font-size: 14px; }
+        }
     </style>
-</div>
 </head>
 <body>
 
 <header>
     <div class="header-container">
-        <h1>Case Tracking Dashboard</h1>
+        <h1>⚖ Case Tracking Dashboard</h1>
         <div class="header-actions">
-            <span>Welcome, {{ user }}</span>
-            <a href="{{ url_for('add_case') }}" class="btn">Add Case</a>
-            <a href="{{ url_for('logout') }}" class="btn logout">Logout</a>
+            <span>👤 {{ user }}</span>
+            <a href="{{ url_for('add_case') }}" class="btn">+ Add Case</a>
+            <a href="/manage-users" class="btn">Manage Users</a>
             <a href="{{ url_for('activity_logs') }}" class="btn">Activity Logs</a>
+            <a href="{{ url_for('logout') }}" class="btn logout">Logout</a>
         </div>
     </div>
 </header>
 
 <main class="container">
-    <!-- Filter Section -->
+    <!-- Filter -->
     <div class="filter-section">
         <form method="GET" action="{{ url_for('dashboard') }}">
             <label>Filter by Case Type:</label>
             <select name="case_type" onchange="this.form.submit()">
                 <option value="">All</option>
-                <option value="RTC" {% if selected_type == 'RTC' %}selected{% endif %}>RTC</option>
+                <option value="RTC"      {% if selected_type == 'RTC' %}selected{% endif %}>RTC</option>
                 <option value="1st MCTC" {% if selected_type == '1st MCTC' %}selected{% endif %}>1st MCTC</option>
                 <option value="2nd MCTC" {% if selected_type == '2nd MCTC' %}selected{% endif %}>2nd MCTC</option>
             </select>
@@ -86,77 +219,269 @@
     <h2>Cases</h2>
 
     {% if cases %}
+
+    <!-- ── DESKTOP TABLE ── -->
+    <div class="table-wrapper">
     <table>
         <thead>
             <tr>
                 <th>Document</th>
-                <th>ID</th>
                 <th>Case Number</th>
                 <th>Title</th>
                 <th>Case Type</th>
                 <th>Complainant</th>
                 <th>Respondent</th>
                 <th>Status</th>
+                <th>File Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for case in cases %}
             <tr>
-                <!-- Document Column -->
                 <td class="document-cell">
                     {% if case.signed_url %}
                         <a href="{{ case.signed_url }}" target="_blank">
-                            <img src="{{ case.signed_url }}" alt="Case Document" class="document-img">
+                            <img src="{{ case.signed_url }}" alt="Document" class="document-img">
                         </a>
+                        <form method="POST" action="/delete-picture/{{ case.id }}" style="margin-top:5px">
+                            <button type="submit" class="btn-action btn-delete" style="font-size:11px"
+                                onclick="return confirm('Delete this picture?')">🗑 Remove</button>
+                        </form>
                     {% else %}
                         {% if session.role == 'admin' %}
                         <form class="upload-form" method="POST" action="{{ url_for('upload_document', case_id=case.id) }}" enctype="multipart/form-data">
                             <input type="file" name="document" accept="image/*" required>
-                            <button type="submit" class="btn small">Upload</button>
+                            <button type="submit" class="btn-action btn-edit" style="margin-top:4px">Upload</button>
                         </form>
+                        {% else %}
+                            <span style="color:#aaa;font-size:12px">No file</span>
                         {% endif %}
                     {% endif %}
                 </td>
-
-                <td>{{ case.id }}</td>
                 <td>{{ case.case_number }}</td>
                 <td>{{ case.case_title }}</td>
-
-                <!-- Case Type Badge -->
                 <td>
-                    <span class="badge 
-                        {% if case.case_type == 'RTC' %}rtc
-                        {% elif case.case_type == '1st MCTC' %}first-mctc
-                        {% elif case.case_type == '2nd MCTC' %}second-mctc
-                        {% endif %}">
+                    <span class="badge {% if case.case_type == 'RTC' %}rtc{% elif case.case_type == '1st MCTC' %}first-mctc{% elif case.case_type == '2nd MCTC' %}second-mctc{% endif %}">
                         {{ case.case_type }}
                     </span>
                 </td>
-
                 <td>{{ case.complainant }}</td>
                 <td>{{ case.respondent }}</td>
-
-                <!-- Status Badge -->
                 <td>
-                    <span class="status 
-                        {% if case.status == 'Open' %}open
-                        {% elif case.status == 'Pending' %}pending
-                        {% elif case.status == 'Closed' %}closed
-                        {% endif %}">
+                    <span class="status {% if case.status == 'Open' %}open{% elif case.status == 'Pending' %}pending{% elif case.status == 'Closed' %}closed{% endif %}">
                         {{ case.status }}
                     </span>
                 </td>
-
-                <!-- Actions -->
                 <td>
-                    <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn small">Edit</a>
-                    <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn small danger">Delete</a>
+                    {% if case.file_status == 'borrowed' %}<span class="file-badge borrowed">Borrowed</span>
+                    {% elif case.file_status == 'disposed' %}<span class="file-badge disposed">Disposed</span>
+                    {% else %}<span class="file-badge in-storage">In Storage</span>{% endif %}
+                </td>
+                <td>
+                    <div class="actions-cell">
+                        <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn-action btn-edit">Edit</a>
+                        <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn-action btn-delete"
+                            onclick="return confirm('Delete this case?')">Delete</a>
+                        {% if case.file_status != 'disposed' %}
+                            {% if case.file_status == 'in_storage' or case.file_status == None %}
+                            <form method="POST" action="/staff-borrow/{{ case.id }}">
+                                <input type="hidden" name="notes" value="">
+                                <button type="submit" class="btn-action btn-borrow"
+                                    onclick="return confirm('Borrow this file?')">Borrow</button>
+                            </form>
+                            {% endif %}
+                            {% if case.file_status == 'borrowed' %}
+                            <button class="btn-action btn-return"
+                                onclick="document.getElementById('return-modal-{{ case.id }}').style.display='flex'">Return</button>
+                            {% endif %}
+                            <button class="btn-action btn-dispose"
+                                onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'">Dispose</button>
+                        {% else %}
+                            <span class="file-badge disposed" style="font-size:11px">Disposed</span>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
+
+    <!-- ── MOBILE CARDS ── -->
+    <div class="mobile-cards">
+        {% for case in cases %}
+        <div class="case-card">
+            <div class="case-card-header">
+                <span>📁 {{ case.case_number }}</span>
+                <span class="badge {% if case.case_type == 'RTC' %}rtc{% elif case.case_type == '1st MCTC' %}first-mctc{% elif case.case_type == '2nd MCTC' %}second-mctc{% endif %}">
+                    {{ case.case_type }}
+                </span>
+            </div>
+            <div class="case-card-body">
+
+                {% if case.signed_url %}
+                <div class="card-doc">
+                    <a href="{{ case.signed_url }}" target="_blank">
+                        <img src="{{ case.signed_url }}" alt="Document">
+                    </a>
+                </div>
+                {% endif %}
+
+                <div class="card-row">
+                    <span class="label">Title</span>
+                    <span class="value">{{ case.case_title }}</span>
+                </div>
+                <div class="card-row">
+                    <span class="label">Complainant</span>
+                    <span class="value">{{ case.complainant }}</span>
+                </div>
+                <div class="card-row">
+                    <span class="label">Respondent</span>
+                    <span class="value">{{ case.respondent }}</span>
+                </div>
+                <div class="card-row">
+                    <span class="label">Status</span>
+                    <span class="value">
+                        <span class="status {% if case.status == 'Open' %}open{% elif case.status == 'Pending' %}pending{% elif case.status == 'Closed' %}closed{% endif %}">
+                            {{ case.status }}
+                        </span>
+                    </span>
+                </div>
+                <div class="card-row">
+                    <span class="label">File Status</span>
+                    <span class="value">
+                        {% if case.file_status == 'borrowed' %}<span class="file-badge borrowed">Borrowed</span>
+                        {% elif case.file_status == 'disposed' %}<span class="file-badge disposed">Disposed</span>
+                        {% else %}<span class="file-badge in-storage">In Storage</span>{% endif %}
+                    </span>
+                </div>
+
+                <!-- Mobile Actions -->
+                <div class="card-actions">
+                    <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn-action btn-edit">Edit</a>
+                    <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn-action btn-delete"
+                        onclick="return confirm('Delete this case?')">Delete</a>
+
+                    {% if case.signed_url %}
+                    <form method="POST" action="/delete-picture/{{ case.id }}" class="full-width">
+                        <button type="submit" class="btn-action btn-delete"
+                            onclick="return confirm('Delete this picture?')">🗑 Remove Picture</button>
+                    </form>
+                    {% else %}
+                    <form class="upload-mobile full-width" method="POST" action="{{ url_for('upload_document', case_id=case.id) }}" enctype="multipart/form-data">
+                        <input type="file" name="document" accept="image/*" required>
+                        <button type="submit" class="btn-action btn-edit">Upload</button>
+                    </form>
+                    {% endif %}
+
+                    {% if case.file_status != 'disposed' %}
+                        {% if case.file_status == 'in_storage' or case.file_status == None %}
+                        <form method="POST" action="/staff-borrow/{{ case.id }}" class="full-width">
+                            <input type="hidden" name="notes" value="">
+                            <button type="submit" class="btn-action btn-borrow"
+                                onclick="return confirm('Borrow this file?')">Borrow</button>
+                        </form>
+                        {% endif %}
+                        {% if case.file_status == 'borrowed' %}
+                        <button class="btn-action btn-return full-width"
+                            onclick="document.getElementById('return-modal-{{ case.id }}').style.display='flex'">Return</button>
+                        {% endif %}
+                        <button class="btn-action btn-dispose full-width"
+                            onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'">Dispose</button>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Return Modal -->
+        {% if case.file_status == 'borrowed' %}
+        <div id="return-modal-{{ case.id }}" class="modal-overlay">
+            <div class="modal-box">
+                <h5>↩ Return File — {{ case.case_number }}</h5>
+                <form method="POST" action="/staff-return/{{ case.id }}">
+                    <label>Set Case Status After Return:</label>
+                    <select name="case_status">
+                        <option value="Open">Open</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                    <label>Notes (optional):</label>
+                    <input type="text" name="notes" placeholder="Return notes...">
+                    <div class="modal-actions">
+                        <button type="submit" class="modal-confirm-return">Confirm Return</button>
+                        <button type="button" class="modal-cancel"
+                            onclick="document.getElementById('return-modal-{{ case.id }}').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Dispose Modal -->
+        {% if case.file_status != 'disposed' %}
+        <div id="dispose-modal-{{ case.id }}" class="modal-overlay">
+            <div class="modal-box">
+                <h5>🗑 Dispose File — {{ case.case_number }}</h5>
+                <form method="POST" action="/staff-disposed/{{ case.id }}">
+                    <label>Notes (optional):</label>
+                    <input type="text" name="notes" placeholder="Disposal reason...">
+                    <div class="modal-actions">
+                        <button type="submit" class="modal-confirm-dispose">Confirm Dispose</button>
+                        <button type="button" class="modal-cancel"
+                            onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% endfor %}
+    </div>
+
+    <!-- Desktop Modals -->
+    <div class="desktop-modals">
+        {% for case in cases %}
+        {% if case.file_status == 'borrowed' %}
+        <div id="return-modal-{{ case.id }}" class="modal-overlay">
+            <div class="modal-box">
+                <h5>↩ Return File — {{ case.case_number }}</h5>
+                <form method="POST" action="/staff-return/{{ case.id }}">
+                    <label>Set Case Status After Return:</label>
+                    <select name="case_status">
+                        <option value="Open">Open</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                    <label>Notes (optional):</label>
+                    <input type="text" name="notes" placeholder="Return notes...">
+                    <div class="modal-actions">
+                        <button type="submit" class="modal-confirm-return">Confirm Return</button>
+                        <button type="button" class="modal-cancel"
+                            onclick="document.getElementById('return-modal-{{ case.id }}').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% if case.file_status != 'disposed' %}
+        <div id="dispose-modal-{{ case.id }}" class="modal-overlay">
+            <div class="modal-box">
+                <h5>🗑 Dispose File — {{ case.case_number }}</h5>
+                <form method="POST" action="/staff-disposed/{{ case.id }}">
+                    <label>Notes (optional):</label>
+                    <input type="text" name="notes" placeholder="Disposal reason...">
+                    <div class="modal-actions">
+                        <button type="submit" class="modal-confirm-dispose">Confirm Dispose</button>
+                        <button type="button" class="modal-cancel"
+                            onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
     {% else %}
         <p>No cases found.</p>
     {% endif %}

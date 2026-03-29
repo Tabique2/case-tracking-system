@@ -54,8 +54,13 @@ def login():
             user = response.data[0]
             if user['password'] == password:
                 session['user'] = user['email']
-                session['role'] = user['role']
-                return redirect('/dashboard')
+                session['role'] = user['role']  # store role in session
+
+                # Redirect based on role
+                if user['role'] == 'admin':
+                    return redirect('/dashboard')
+                elif user['role'] == 'staff':
+                    return redirect('/staff-cases')
             else:
                 return "Wrong password ❌"
         else:
@@ -267,6 +272,69 @@ def upload_document(case_id):
 
     return redirect('/dashboard')
 
+# Delete Picture
+@app.route('/delete-picture/<case_id>', methods=['POST'])
+def delete_picture(case_id):
+    if 'user' not in session:
+        return redirect('/login')
+
+    response = supabase.table("cases").select("*").eq("id", case_id).execute()
+    if not response.data:
+        return "Case not found ❌"
+    case = response.data[0]
+
+    if case.get("document_url"):
+        supabase.storage.from_('case-documents').remove([case['document_url']])
+        supabase.table("cases").update({"document_url": None}).eq("id", case_id).execute()
+        log_activity(session['user'], "Deleted picture", case_id)
+
+    return redirect(request.referrer or '/dashboard')
+
+# Manage Users (Admin Only)
+@app.route('/manage-users')
+def manage_users():
+    if 'user' not in session or session.get('role') != 'admin':
+        return redirect('/login')
+    users = supabase.table("users").select("*").order("id", desc=True).execute().data or []
+    return render_template("manage_users.html", users=users, current_user=session['user'])
+
+@app.route('/create-user', methods=['POST'])
+def create_user():
+    if 'user' not in session or session.get('role') != 'admin':
+        return redirect('/login')
+
+    email = request.form['email']
+    password = request.form['password']
+
+    existing = supabase.table("users").select("id").eq("email", email).execute()
+    if existing.data:
+        return redirect('/manage-users?error=Email already exists')
+
+    supabase.table("users").insert({
+        "email": email,
+        "password": password,
+        "role": "staff"
+    }).execute()
+    log_activity(session['user'], f"Created staff account: {email}")
+    return redirect('/manage-users')
+
+@app.route('/delete-user/<user_id>')
+def delete_user(user_id):
+    if 'user' not in session or session.get('role') != 'admin':
+        return redirect('/login')
+
+    response = supabase.table("users").select("*").eq("id", user_id).execute()
+    if not response.data:
+        return "User not found ❌"
+    user = response.data[0]
+
+    if user['email'] == session['user']:
+        return redirect('/manage-users?error=Cannot delete your own account')
+
+    supabase.table("users").delete().eq("id", user_id).execute()
+    log_activity(session['user'], f"Deleted user: {user['email']}")
+    return redirect('/manage-users')
+
 # Activity Logs
 @app.route('/activity-logs')
 def activity_logs():
@@ -276,6 +344,9 @@ def activity_logs():
     response = supabase.table("activity_logs").select("*").order("created_at", desc=True).execute()
     logs = response.data if response.data else []
     return render_template("activity_logs.html", logs=logs)
+
+from staff_routes import staff_bp
+app.register_blueprint(staff_bp)
 
 # Run app
 if __name__ == '__main__':

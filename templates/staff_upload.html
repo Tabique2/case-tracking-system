@@ -1,0 +1,19 @@
+<!-- templates/staff_upload.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Document</title>
+</head>
+<body>
+    <h1>Upload Document for Case {{ case.case_number }}</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="document" required>
+        <button type="submit">Upload</button>
+    </form>
+
+    <br>
+    <a href="/staff-cases">Back to Cases</a>
+</body>
+</html>

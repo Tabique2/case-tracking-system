@@ -1,56 +1,377 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Edit Case</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { background-color: #f0f2f5; }
+
+        .page-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .edit-header {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .edit-header h1 {
+            font-size: 20px;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .edit-header a {
+            color: white;
+            text-decoration: none;
+            font-size: 13px;
+            padding: 7px 16px;
+            border: 1.5px solid rgba(255,255,255,0.6);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .edit-header a:hover { background: rgba(255,255,255,0.15); }
+
+        .edit-body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+
+        .edit-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+            width: 100%;
+            max-width: 680px;
+            overflow: hidden;
+        }
+
+        .edit-card-header {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            padding: 24px 32px;
+            color: white;
+        }
+
+        .edit-card-header h2 {
+            margin: 0 0 4px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .edit-card-header p {
+            margin: 0;
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .case-number-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .edit-card-body { padding: 32px; }
+
+        /* Document Section */
+        .doc-section {
+            background: #f8f9fa;
+            border: 1.5px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .doc-section .doc-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 12px;
+        }
+
+        .doc-preview {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .doc-preview img {
+            width: 120px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .doc-preview a { display: block; }
+
+        .delete-doc-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #dc3545;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .delete-doc-label input { accent-color: #dc3545; }
+
+        .file-upload-area {
+            border: 1.5px dashed #007BFF;
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+
+        .file-upload-area:hover { background: #f0f7ff; }
+
+        .file-upload-area input[type="file"] {
+            width: 100%;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .file-hint {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 6px;
+        }
+
+        /* Form Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-grid .full-width { grid-column: 1 / -1; }
+
+        .field-group { display: flex; flex-direction: column; }
+
+        .field-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 6px;
+        }
+
+        .field-group input,
+        .field-group select {
+            padding: 10px 14px;
+            border: 1.5px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+        }
+
+        .field-group input:focus,
+        .field-group select:focus {
+            border-color: #007BFF;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.12);
+            outline: none;
+        }
+
+        .select-wrapper { position: relative; }
+
+        .select-wrapper::after {
+            content: '▾';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            pointer-events: none;
+            font-size: 14px;
+        }
+
+        .select-wrapper select { padding-right: 36px; width: 100%; }
+
+        /* Status indicator dots */
+        .status-option-open   { color: #28a745; }
+        .status-option-pending { color: #ffc107; }
+        .status-option-closed { color: #6c757d; }
+
+        /* Divider */
+        .divider {
+            border: none;
+            border-top: 1px solid #f0f0f0;
+            margin: 28px 0;
+        }
+
+        /* Action Buttons */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            padding: 11px 24px;
+            background: #f8f9fa;
+            color: #495057;
+            border: 1.5px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-cancel:hover { background: #e9ecef; }
+
+        .btn-save {
+            padding: 11px 32px;
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+        }
+
+        .btn-save:hover { opacity: 0.92; transform: translateY(-1px); }
+        .btn-save:active { transform: translateY(0); }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Edit Case</h2>
-        <form method="POST" class="case-form">
+<div class="page-wrapper">
 
-                        <label>Document</label>
-            {% if case.document_url %}
-                <div style="margin-bottom:10px;">
-                    <a href="{{ signed_url }}" target="_blank">
-                        <img src="{{ signed_url }}" alt="Case Document" width="100" style="border-radius:4px;">
-                    </a>
-                </div>
-                <input type="checkbox" name="delete_document" value="yes"> Delete current document<br><br>
-            {% endif %}
-
-            <input type="file" name="document" accept="image/*">
-            <p style="font-size:12px;color:gray;">Choose a file to replace the current document (optional)</p>
-            <label>Case Number</label>
-            <input type="text" name="case_number" value="{{ case.case_number }}" required>
-
-            <label>Case Title</label>
-            <input type="text" name="case_title" value="{{ case.case_title }}" required>
-
-            <!-- ✅ FIX ADDED HERE -->
-            <label>Case Type</label>
-            <select name="case_type" required>
-                <option value="RTC" {% if case.case_type == "RTC" %}selected{% endif %}>RTC</option>
-                <option value="1st MCTC" {% if case.case_type == "1st MCTC" %}selected{% endif %}>1st MUNICIPAL CIRCUIT TRIAL COURT</option>
-                <option value="2nd MCTC" {% if case.case_type == "2nd MCTC" %}selected{% endif %}>2nd MUNICIPAL CIRCUIT TRIAL COURT</option>
-            </select>
-
-            <label>Complainant</label>
-            <input type="text" name="complainant" value="{{ case.complainant }}" required>
-
-            <label>Respondent</label>
-            <input type="text" name="respondent" value="{{ case.respondent }}" required>
-
-            <label>Status</label>
-            <select name="status" required>
-                <option value="Open" {% if case.status == "Open" %}selected{% endif %}>Open</option>
-                <option value="Pending" {% if case.status == "Pending" %}selected{% endif %}>Pending</option>
-                <option value="Closed" {% if case.status == "Closed" %}selected{% endif %}>Closed</option>
-            </select>
-
-            <button type="submit">Update Case</button>
-        </form>
+    <!-- Top Bar -->
+    <div class="edit-header">
+        <h1>⚖ Case Tracking System</h1>
+        <a href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
     </div>
+
+    <div class="edit-body">
+        <div class="edit-card">
+
+            <!-- Card Header -->
+            <div class="edit-card-header">
+                <h2>Edit Case</h2>
+                <p>Update the details of this case record</p>
+                <span class="case-number-badge">📁 {{ case.case_number }}</span>
+            </div>
+
+            <!-- Card Body -->
+            <div class="edit-card-body">
+                <form method="POST" enctype="multipart/form-data">
+
+                    <!-- Document Section -->
+                    <div class="doc-section">
+                        <div class="doc-label">📎 Case Document</div>
+
+                        {% if case.document_url %}
+                        <div class="doc-preview">
+                            <a href="{{ signed_url }}" target="_blank">
+                                <img src="{{ signed_url }}" alt="Case Document">
+                            </a>
+                        </div>
+                        <br>
+                        <label class="delete-doc-label">
+                            <input type="checkbox" name="delete_document" value="yes">
+                            Remove current document
+                        </label>
+                        <br>
+                        {% endif %}
+
+                        <div class="file-upload-area" style="margin-top:12px">
+                            <input type="file" name="document" accept="image/*">
+                            <div class="file-hint">Upload a new image to replace the current one (optional)</div>
+                        </div>
+                    </div>
+
+                    <!-- Form Fields -->
+                    <div class="form-grid">
+
+                        <div class="field-group">
+                            <label>Case Number</label>
+                            <input type="text" name="case_number" value="{{ case.case_number }}" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Case Type</label>
+                            <div class="select-wrapper">
+                                <select name="case_type" required>
+                                    <option value="RTC"      {% if case.case_type == "RTC" %}selected{% endif %}>RTC — Regional Trial Court</option>
+                                    <option value="1st MCTC" {% if case.case_type == "1st MCTC" %}selected{% endif %}>1st MCTC</option>
+                                    <option value="2nd MCTC" {% if case.case_type == "2nd MCTC" %}selected{% endif %}>2nd MCTC</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field-group full-width">
+                            <label>Case Title</label>
+                            <input type="text" name="case_title" value="{{ case.case_title }}" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Complainant</label>
+                            <input type="text" name="complainant" value="{{ case.complainant }}" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Respondent</label>
+                            <input type="text" name="respondent" value="{{ case.respondent }}" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label>Case Status</label>
+                            <div class="select-wrapper">
+                                <select name="status" required>
+                                    <option value="Open"    {% if case.status == "Open" %}selected{% endif %}>🟢 Open</option>
+                                    <option value="Pending" {% if case.status == "Pending" %}selected{% endif %}>🟡 Pending</option>
+                                    <option value="Closed"  {% if case.status == "Closed" %}selected{% endif %}>⚫ Closed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <hr class="divider">
+
+                    <div class="form-actions">
+                        <a href="{{ url_for('dashboard') }}" class="btn-cancel">Cancel</a>
+                        <button type="submit" class="btn-save">💾 Save Changes</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

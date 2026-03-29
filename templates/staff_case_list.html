@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Cases</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { background-color: #f0f2f5; }
+
+        /* ── Header ── */
+        .staff-header {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .staff-header h1 {
+            margin: 0;
+            font-size: clamp(14px, 3vw, 20px);
+            font-weight: 700;
+        }
+        .staff-header a {
+            color: white;
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 14px;
+            border: 1.5px solid rgba(255,255,255,0.6);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .staff-header a:hover { background: rgba(255,255,255,0.15); }
+
+        .main-content { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+
+        /* ── Search & Filter ── */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            background: white;
+            padding: 14px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        }
+        .search-bar input {
+            flex: 1;
+            min-width: 160px;
+            padding: 9px 12px;
+            border: 1.5px solid #dee2e6;
+            border-radius: 7px;
+            font-size: 14px;
+        }
+        .search-bar input:focus { border-color: #007BFF; outline: none; }
+        .search-bar select {
+            padding: 9px 12px;
+            border: 1.5px solid #dee2e6;
+            border-radius: 7px;
+            font-size: 14px;
+            background: white;
+        }
+        .search-bar button {
+            padding: 9px 20px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .search-bar button:hover { background: #0056b3; }
+
+        /* ── Buttons ── */
+        .actions-cell { display: flex; flex-direction: column; gap: 5px; min-width: 100px; }
+        .actions-cell form { margin: 0; }
+
+        .btn-action {
+            display: block;
+            width: 100%;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn-action:hover { opacity: 0.85; }
+        .btn-view    { background-color: #17a2b8; color: white; }
+        .btn-upload  { background-color: #6c757d; color: white; }
+        .btn-delete  { background-color: #dc3545; color: white; }
+        .btn-borrow  { background-color: #f39c12; color: white; }
+        .btn-return  { background-color: #27ae60; color: white; }
+        .btn-dispose { background-color: #c0392b; color: white; }
+
+        /* ── Badges ── */
+        .file-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .file-badge.in-storage { background-color: #27ae60; }
+        .file-badge.borrowed   { background-color: #f39c12; }
+        .file-badge.disposed   { background-color: #e74c3c; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .status-badge.open    { background-color: #28a745; }
+        .status-badge.pending { background-color: #ffc107; color: #333; }
+        .status-badge.closed  { background-color: #6c757d; }
+
+        .type-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .type-badge.rtc        { background-color: #007BFF; }
+        .type-badge.first-mctc { background-color: #28a745; }
+        .type-badge.second-mctc{ background-color: #fd7e14; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+        .modal-box {
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .modal-box h5 { margin: 0 0 16px; font-size: 16px; color: #333; }
+        .modal-box label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; }
+        .modal-box select,
+        .modal-box input[type="text"] {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+        .modal-actions { display: flex; gap: 8px; margin-top: 4px; }
+        .modal-actions button {
+            flex: 1; padding: 9px; font-size: 13px;
+            font-weight: bold; border: none; border-radius: 5px; cursor: pointer;
+        }
+        .modal-confirm-return  { background-color: #27ae60; color: white; }
+        .modal-confirm-dispose { background-color: #c0392b; color: white; }
+        .modal-cancel { background-color: #aaa; color: white; }
+
+        /* ── Desktop Table ── */
+        .table-wrapper { overflow-x: auto; }
+        .table-wrapper table { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        table th, table td { vertical-align: middle; white-space: nowrap; }
+
+        /* ── Mobile Cards ── */
+        .mobile-cards { display: none; }
+
+        .case-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .case-card-header {
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            color: white;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .case-card-body { padding: 14px; }
+        .case-card-body .card-doc {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .case-card-body .card-doc img {
+            width: 100%;
+            max-width: 200px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+        .card-row:last-of-type { border-bottom: none; }
+        .card-row .label { color: #888; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+        .card-row .value { font-weight: 500; text-align: right; }
+
+        .card-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .card-actions form { margin: 0; }
+        .card-actions .btn-action { font-size: 13px; padding: 8px; }
+        .card-actions .full-width { grid-column: 1 / -1; }
+
+        @media (max-width: 768px) {
+            .table-wrapper { display: none; }
+            .mobile-cards  { display: block; }
+            .search-bar { flex-direction: column; }
+            .search-bar input,
+            .search-bar select,
+            .search-bar button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="staff-header">
+    <h1>⚖ Staff Dashboard</h1>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:13px">👤 {{ user }}</span>
+        <a href="/logout">Logout</a>
+    </div>
+</div>
+
+<div class="main-content">
+
+    <!-- Search & Filter -->
+    <form method="get" class="search-bar">
+        <input type="text" name="search" placeholder="Search by case title..." value="{{ search }}">
+        <select name="case_type" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            <option value="RTC"      {% if selected_type=='RTC' %}selected{% endif %}>RTC</option>
+            <option value="1st MCTC" {% if selected_type=='1st MCTC' %}selected{% endif %}>1st MCTC</option>
+            <option value="2nd MCTC" {% if selected_type=='2nd MCTC' %}selected{% endif %}>2nd MCTC</option>
+        </select>
+        <button type="submit">Search</button>
+    </form>
+
+    <h2 style="margin-bottom:16px;font-size:18px;color:#333">Cases</h2>
+
+    {% if cases %}
+
+    <!-- ── DESKTOP TABLE ── -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Document</th>
+                    <th>Case Number</th>
+                    <th>Title</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>File Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr>
+                    <td style="width:100px;text-align:center">
+                        {% if case.signed_url %}
+                            <a href="{{ case.signed_url }}" target="_blank">
+                                <img src="{{ case.signed_url }}" alt="Document"
+                                    style="width:80px;height:60px;object-fit:cover;border-radius:5px;border:1px solid #ccc">
+                            </a>
+                            <form method="POST" action="/delete-picture/{{ case.id }}" style="margin-top:5px">
+                                <button type="submit" class="btn-action btn-delete" style="font-size:11px"
+                                    onclick="return confirm('Delete this picture?')">🗑 Remove</button>
+                            </form>
+                        {% else %}
+                            <span style="color:#aaa;font-size:12px">No file</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ case.case_number }}</td>
+                    <td>{{ case.case_title }}</td>
+                    <td>
+                        <span class="type-badge {% if case.case_type == 'RTC' %}rtc{% elif case.case_type == '1st MCTC' %}first-mctc{% elif case.case_type == '2nd MCTC' %}second-mctc{% endif %}">
+                            {{ case.case_type }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge {% if case.status == 'Open' %}open{% elif case.status == 'Pending' %}pending{% elif case.status == 'Closed' %}closed{% endif %}">
+                            {{ case.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if case.file_status == 'borrowed' %}<span class="file-badge borrowed">Borrowed</span>
+                        {% elif case.file_status == 'disposed' %}<span class="file-badge disposed">Disposed</span>
+                        {% else %}<span class="file-badge in-storage">In Storage</span>{% endif %}
+                    </td>
+                    <td>
+                        <div class="actions-cell">
+                            <a href="/staff-case/{{ case.id }}" class="btn-action btn-view">View</a>
+                            <a href="/staff-upload/{{ case.id }}" class="btn-action btn-upload">Upload</a>
+                            <a href="/staff-delete/{{ case.id }}" class="btn-action btn-delete"
+                                onclick="return confirm('Delete this case?')">Delete</a>
+                            {% if case.file_status != 'disposed' %}
+                                {% if case.file_status == 'in_storage' or case.file_status == None %}
+                                <form method="POST" action="/staff-borrow/{{ case.id }}">
+                                    <input type="hidden" name="notes" value="">
+                                    <button type="submit" class="btn-action btn-borrow"
+                                        onclick="return confirm('Borrow this file?')">Borrow</button>
+                                </form>
+                                {% endif %}
+                                {% if case.file_status == 'borrowed' %}
+                                <button class="btn-action btn-return"
+                                    onclick="document.getElementById('return-modal-{{ case.id }}').style.display='flex'">Return</button>
+                                {% endif %}
+                                <button class="btn-action btn-dispose"
+                                    onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'">Dispose</button>
+                            {% else %}
+                                <span class="file-badge disposed" style="font-size:11px">Disposed</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align:center;color:#aaa">No cases found</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── MOBILE CARDS ── -->
+    <div class="mobile-cards">
+        {% for case in cases %}
+        <div class="case-card">
+            <div class="case-card-header">
+                <span>📁 {{ case.case_number }}</span>
+                <span class="type-badge {% if case.case_type == 'RTC' %}rtc{% elif case.case_type == '1st MCTC' %}first-mctc{% elif case.case_type == '2nd MCTC' %}second-mctc{% endif %}">
+                    {{ case.case_type }}
+                </span>
+            </div>
+            <div class="case-card-body">
+
+                {% if case.signed_url %}
+                <div class="card-doc">
+                    <a href="{{ case.signed_url }}" target="_blank">
+                        <img src="{{ case.signed_url }}" alt="Document">
+                    </a>
+                </div>
+                {% endif %}
+
+                <div class="card-row">
+                    <span class="label">Title</span>
+                    <span class="value">{{ case.case_title }}</span>
+                </div>
+                <div class="card-row">
+                    <span class="label">Status</span>
+                    <span class="value">
+                        <span class="status-badge {% if case.status == 'Open' %}open{% elif case.status == 'Pending' %}pending{% elif case.status == 'Closed' %}closed{% endif %}">
+                            {{ case.status }}
+                        </span>
+                    </span>
+                </div>
+                <div class="card-row">
+                    <span class="label">File Status</span>
+                    <span class="value">
+                        {% if case.file_status == 'borrowed' %}<span class="file-badge borrowed">Borrowed</span>
+                        {% elif case.file_status == 'disposed' %}<span class="file-badge disposed">Disposed</span>
+                        {% else %}<span class="file-badge in-storage">In Storage</span>{% endif %}
+                    </span>
+                </div>
+
+                <div class="card-actions">
+                    <a href="/staff-case/{{ case.id }}" class="btn-action btn-view">View</a>
+                    <a href="/staff-upload/{{ case.id }}" class="btn-action btn-upload">Upload</a>
+                    <a href="/staff-delete/{{ case.id }}" class="btn-action btn-delete full-width"
+                        onclick="return confirm('Delete this case?')">Delete</a>
+
+                    {% if case.signed_url %}
+                    <form method="POST" action="/delete-picture/{{ case.id }}" class="full-width">
+                        <button type="submit" class="btn-action btn-delete"
+                            onclick="return confirm('Delete this picture?')">🗑 Remove Picture</button>
+                    </form>
+                    {% endif %}
+
+                    {% if case.file_status != 'disposed' %}
+                        {% if case.file_status == 'in_storage' or case.file_status == None %}
+                        <form method="POST" action="/staff-borrow/{{ case.id }}" class="full-width">
+                            <input type="hidden" name="notes" value="">
+                            <button type="submit" class="btn-action btn-borrow"
+                                onclick="return confirm('Borrow this file?')">Borrow</button>
+                        </form>
+                        {% endif %}
+                        {% if case.file_status == 'borrowed' %}
+                        <button class="btn-action btn-return full-width"
+                            onclick="document.getElementById('m-return-{{ case.id }}').style.display='flex'">Return</button>
+                        {% endif %}
+                        <button class="btn-action btn-dispose full-width"
+                            onclick="document.getElementById('m-dispose-{{ case.id }}').style.display='flex'">Dispose</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if case.file_status == 'borrowed' %}
+        <div id="m-return-{{ case.id }}" class="modal-overlay">
+            <div class="modal-box">
+                <h5>↩ Return File — {{ case.case_number }}</h5>
+                <form method="POST" action="/staff-return/{{ case.id }}">
+                    <label>Set Case Status After Return:</label>
+                    <select name="case_status">
+                        <option value="Open">Open</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                    <label>Notes (optional):</label>
+                    <input type="text" name="notes" placeholder="Return notes...">
+                    <div class="modal-actions">
+                        <button type="submit" class="modal-confirm-return">Confirm Return</button>
+                        <button type="button" class="modal-cancel"
+                            onclick="document.getElementById('m-return-{{ case.id }}').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if case.file_status != 'disposed' %}
+        <div id="m-dispose-{{ case.id }}" class="modal-overlay">
+            <div class="modal-box">
+                <h5>🗑 Dispose File — {{ case.case_number }}</h5>
+                <form method="POST" action="/staff-disposed/{{ case.id }}">
+                    <label>Notes (optional):</label>
+                    <input type="text" name="notes" placeholder="Disposal reason...">
+                    <div class="modal-actions">
+                        <button type="submit" class="modal-confirm-dispose">Confirm Dispose</button>
+                        <button type="button" class="modal-cancel"
+                            onclick="document.getElementById('m-dispose-{{ case.id }}').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% endfor %}
+    </div>
+
+    <!-- Desktop Modals -->
+    {% for case in cases %}
+    {% if case.file_status == 'borrowed' %}
+    <div id="return-modal-{{ case.id }}" class="modal-overlay">
+        <div class="modal-box">
+            <h5>↩ Return File — {{ case.case_number }}</h5>
+            <form method="POST" action="/staff-return/{{ case.id }}">
+                <label>Set Case Status After Return:</label>
+                <select name="case_status">
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                </select>
+                <label>Notes (optional):</label>
+                <input type="text" name="notes" placeholder="Return notes...">
+                <div class="modal-actions">
+                    <button type="submit" class="modal-confirm-return">Confirm Return</button>
+                    <button type="button" class="modal-cancel"
+                        onclick="document.getElementById('return-modal-{{ case.id }}').style.display='none'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    {% if case.file_status != 'disposed' %}
+    <div id="dispose-modal-{{ case.id }}" class="modal-overlay">
+        <div class="modal-box">
+            <h5>🗑 Dispose File — {{ case.case_number }}</h5>
+            <form method="POST" action="/staff-disposed/{{ case.id }}">
+                <label>Notes (optional):</label>
+                <input type="text" name="notes" placeholder="Disposal reason...">
+                <div class="modal-actions">
+                    <button type="submit" class="modal-confirm-dispose">Confirm Dispose</button>
+                    <button type="button" class="modal-cancel"
+                        onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    {% else %}
+        <p style="color:#aaa;text-align:center;margin-top:40px">No cases found.</p>
+    {% endif %}
+
+</div>
+</body>
+</html>
