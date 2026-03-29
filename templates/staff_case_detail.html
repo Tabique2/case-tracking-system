@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Case Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Case Details</h4>
+        <a href="/staff-cases" class="btn btn-outline-secondary btn-sm">Back to Cases</a>
+    </div>
+
+    <!-- Case Info -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <p><strong>Case Number:</strong> {{ case.case_number }}</p>
+            <p><strong>Title:</strong> {{ case.case_title }}</p>
+            <p><strong>Type:</strong> {{ case.case_type }}</p>
+            <p><strong>Complainant:</strong> {{ case.complainant }}</p>
+            <p><strong>Respondent:</strong> {{ case.respondent }}</p>
+            <p><strong>Status:</strong> {{ case.status }}</p>
+            <p><strong>File Status:</strong>
+                {% if case.file_status == 'borrowed' %}
+                    <span class="badge bg-warning text-dark">Borrowed</span>
+                {% elif case.file_status == 'disposed' %}
+                    <span class="badge bg-danger">Disposed</span>
+                {% else %}
+                    <span class="badge bg-success">In Storage</span>
+                {% endif %}
+            </p>
+            {% if signed_url %}
+                <a href="{{ signed_url }}" target="_blank" class="btn btn-sm btn-primary">Download Document</a>
+            {% else %}
+                <p class="text-muted">No document uploaded</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- File Actions -->
+    {% if case.file_status != 'disposed' %}
+    <div class="card mb-4">
+        <div class="card-header"><strong>File Actions</strong></div>
+        <div class="card-body">
+
+            <!-- Borrow -->
+            {% if case.file_status == 'in_storage' %}
+            <form method="POST" action="/staff-borrow/{{ case.id }}" class="mb-3">
+                <label class="form-label">Notes (optional)</label>
+                <input type="text" name="notes" class="form-control mb-2" placeholder="Reason for borrowing...">
+                <button type="submit" class="btn btn-warning"
+                    onclick="return confirm('Borrow this file?')">Borrow File</button>
+            </form>
+            {% endif %}
+
+            <!-- Return -->
+            {% if case.file_status == 'borrowed' %}
+            <form method="POST" action="/staff-return/{{ case.id }}" class="mb-3">
+                <label class="form-label">Set Case Status After Return</label>
+                <select name="case_status" class="form-select mb-2">
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                </select>
+                <label class="form-label">Notes (optional)</label>
+                <input type="text" name="notes" class="form-control mb-2" placeholder="Return notes...">
+                <button type="submit" class="btn btn-success"
+                    onclick="return confirm('Return this file?')">Return File</button>
+            </form>
+            {% endif %}
+
+            <!-- Disposed -->
+            {% if case.file_status != 'disposed' %}
+            <form method="POST" action="/staff-disposed/{{ case.id }}">
+                <label class="form-label">Notes (optional)</label>
+                <input type="text" name="notes" class="form-control mb-2" placeholder="Disposal reason...">
+                <button type="submit" class="btn btn-danger"
+                    onclick="return confirm('Mark as disposed? This will close the case permanently.')">Mark as Disposed</button>
+            </form>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Transaction History -->
+    <div class="card">
+        <div class="card-header"><strong>File Transaction History</strong></div>
+        <div class="card-body">
+            {% if transactions %}
+            <table class="table table-sm table-bordered">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Action</th>
+                        <th>Performed By</th>
+                        <th>Case Status After</th>
+                        <th>Notes</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>
+                            {% if t.action == 'borrowed' %}
+                                <span class="badge bg-warning text-dark">Borrowed</span>
+                            {% elif t.action == 'returned' %}
+                                <span class="badge bg-success">Returned</span>
+                            {% else %}
+                                <span class="badge bg-danger">Disposed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ t.performed_by }}</td>
+                        <td>{{ t.case_status_after }}</td>
+                        <td>{{ t.notes or '-' }}</td>
+                        <td>{{ t.created_at[:19].replace('T', ' ') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <p class="text-muted">No transactions yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
