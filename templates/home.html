@@ -1,0 +1,172 @@
+{% extends "layout.html" %}
+{% block title %}Home{% endblock %}
+{% block page_title %}Home{% endblock %}
+{% block extra_style %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    .stat-icon.blue   { background: #e8f0fe; }
+    .stat-icon.green  { background: #e6f9f0; }
+    .stat-icon.orange { background: #fff3e0; }
+    .stat-icon.red    { background: #fdecea; }
+    .stat-icon.gray   { background: #f0f0f0; }
+
+    .stat-info .number { font-size: 26px; font-weight: 800; color: #1a2a4a; }
+    .stat-info .label  { font-size: 12px; color: #888; font-weight: 600; margin-top: 2px; }
+
+    .welcome-card {
+        background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+        border-radius: 14px;
+        padding: 28px;
+        color: white;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .welcome-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .welcome-card p  { font-size: 14px; opacity: 0.85; }
+    .welcome-card .big-icon { font-size: 64px; opacity: 0.3; }
+
+    .cat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 28px;
+    }
+    .cat-box {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        border-top: 4px solid #2e5fad;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .cat-box:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+    .cat-box .cat-name {
+        font-size: 12px;
+        font-weight: 700;
+        color: #555;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1.4;
+    }
+    .cat-box .cat-count {
+        font-size: 36px;
+        font-weight: 800;
+        color: #1a2a4a;
+        line-height: 1;
+    }
+    .cat-box .cat-label {
+        font-size: 11px;
+        color: #aaa;
+        font-weight: 600;
+    }
+    .section-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1a2a4a;
+        margin-top: 28px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="welcome-card">
+    <div>
+        <h2>Welcome back, {{ session.user.split('@')[0].title() }}! 👋</h2>
+        <p>Prosecutor's Office — Manolo Fortich, Bukidnon</p>
+    </div>
+    <div class="big-icon">⚖</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue">📁</div>
+        <div class="stat-info">
+            <div class="number">{{ total_cases }}</div>
+            <div class="label">Total Cases</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">🟢</div>
+        <div class="stat-info">
+            <div class="number">{{ open_cases }}</div>
+            <div class="label">Open Cases</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">🟡</div>
+        <div class="stat-info">
+            <div class="number">{{ pending_cases }}</div>
+            <div class="label">Pending Cases</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon gray">⚫</div>
+        <div class="stat-info">
+            <div class="number">{{ closed_cases }}</div>
+            <div class="label">Closed Cases</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">📤</div>
+        <div class="stat-info">
+            <div class="number">{{ borrowed_files }}</div>
+            <div class="label">Borrowed Files</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red">👥</div>
+        <div class="stat-info">
+            <div class="number">{{ total_users }}</div>
+            <div class="label">Staff Users</div>
+        </div>
+    </div>
+</div>
+
+<div class="section-title">📂 Cases by Category</div>
+<div class="cat-grid">
+    {% for cat in categories %}
+    <a href="/cases-by-category?category={{ cat | urlencode }}" class="cat-box" style="text-decoration:none">
+        <div class="cat-name">{{ cat }}</div>
+        <div class="cat-count">{{ category_counts[cat] }}</div>
+        <div class="cat-label">Total Cases</div>
+    </a>
+    {% endfor %}
+</div>
+
+{% endblock %}
