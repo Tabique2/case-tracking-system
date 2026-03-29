@@ -1,28 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Activity Logs</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-<header>
-    <div class="header-container">
-        <h1>Activity Logs</h1>
-        <div class="header-actions">
-            <span>Welcome, {{ session.user }}</span>
-            <a href="{{ url_for('dashboard') }}" class="btn">Dashboard</a>
-            <a href="{{ url_for('logout') }}" class="btn logout">Logout</a>
-        </div>
-    </div>
-</header>
+{% extends "layout.html" %}
+{% block title %}Activity Logs{% endblock %}
+{% block page_title %}Activity Logs{% endblock %}
+{% block content %}
 
-<main class="container">
+<div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow:hidden">
     {% if logs %}
+    <div style="overflow-x:auto">
     <table>
         <thead>
             <tr>
-                <th>ID</th>
                 <th>User</th>
                 <th>Action</th>
                 <th>Case ID</th>
@@ -32,18 +18,18 @@
         <tbody>
             {% for log in logs %}
             <tr>
-                <td>{{ log.id }}</td>
                 <td>{{ log.user_email }}</td>
                 <td>{{ log.action }}</td>
                 <td>{{ log.case_id or '-' }}</td>
-                <td>{{ log.created_at }}</td>
+                <td>{{ log.created_at[:19].replace('T', ' ') }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
-        <p>No activity logs found.</p>
+        <p style="padding:24px;color:#aaa;text-align:center">No activity logs found.</p>
     {% endif %}
-</main>
-</body>
-</html>
+</div>
+
+{% endblock %}
