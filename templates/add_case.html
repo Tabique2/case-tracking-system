@@ -1,69 +1,312 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Add Case - Case Tracking System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <header>
-        <div class="header-container">
-            <h1>Case Tracking System</h1>
-            <div class="header-actions">
-                <a href="{{ url_for('dashboard') }}" class="btn">Dashboard</a>
-                <a href="{{ url_for('logout') }}" class="btn logout">Logout</a>
-            </div>
-        </div>
-    </header>
+{% extends "layout.html" %}
+{% block title %}Add Case{% endblock %}
+{% block page_title %}Add New Case{% endblock %}
+{% block extra_style %}
+<style>
+    .form-wrapper {
+        max-width: 760px;
+        margin: 0 auto;
+    }
 
-    <main class="container">
-        <div class="form-card">
+    .form-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.09);
+        overflow: hidden;
+    }
+
+    .form-card-header {
+        background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+        padding: 22px 28px;
+        color: white;
+    }
+
+    .form-card-header h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .form-card-header p {
+        margin: 0;
+        font-size: 13px;
+        opacity: 0.8;
+    }
+
+    .form-card-body {
+        padding: 28px;
+    }
+
+    .form-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0 0 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #f0f2f5;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 24px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .field label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+        padding: 10px 13px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1e293b;
+        background: #f8fafc;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        font-family: inherit;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+        border-color: #2e5fad;
+        box-shadow: 0 0 0 3px rgba(46,95,173,0.1);
+        outline: none;
+        background: white;
+    }
+
+    .field input::placeholder,
+    .field textarea::placeholder {
+        color: #cbd5e1;
+    }
+
+    /* Category selector */
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        margin-bottom: 6px;
+    }
+
+    .cat-option {
+        position: relative;
+    }
+
+    .cat-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .cat-option label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 13px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        background: #f8fafc;
+        transition: all 0.15s;
+        text-transform: none;
+        letter-spacing: 0;
+        line-height: 1.3;
+    }
+
+    .cat-option label::before {
+        content: '';
+        width: 14px;
+        height: 14px;
+        border: 2px solid #cbd5e1;
+        border-radius: 50%;
+        flex-shrink: 0;
+        transition: all 0.15s;
+    }
+
+    .cat-option input[type="radio"]:checked + label {
+        border-color: #2e5fad;
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    .cat-option input[type="radio"]:checked + label::before {
+        border-color: #2e5fad;
+        background: #2e5fad;
+        box-shadow: inset 0 0 0 3px white;
+    }
+
+    .cat-option label:hover {
+        border-color: #93c5fd;
+        background: #f0f7ff;
+    }
+
+    /* Divider */
+    .form-divider {
+        border: none;
+        border-top: 1px solid #f0f2f5;
+        margin: 24px 0;
+    }
+
+    /* Footer */
+    .form-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-top: 8px;
+    }
+
+    .btn-cancel {
+        padding: 10px 22px;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .btn-cancel:hover { background: #e2e8f0; }
+
+    .btn-submit {
+        padding: 10px 28px;
+        background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(30,60,120,0.2);
+        transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn-submit:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); }
+
+    @media (max-width: 600px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .category-grid { grid-template-columns: 1fr 1fr; }
+        .form-card-body { padding: 20px; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="form-wrapper">
+    <div class="form-card">
+        <div class="form-card-header">
             <h2>Add New Case</h2>
+            <p>Fill in the details below to register a new case record</p>
+        </div>
 
-            <!-- Back button -->
-            <a href="{{ url_for('dashboard') }}" class="btn back-btn">← Back to Dashboard</a>
+        <div class="form-card-body">
+            <form method="POST">
 
-            <form method="POST" class="case-form">
-                <div class="form-group">
-                    <label for="case_number">Case Number</label>
-                    <input type="text" name="case_number" id="case_number" placeholder="Enter case number" required>
+                <!-- Case Info -->
+                <p class="form-section-title">Case Information</p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Case Number</label>
+                        <input type="text" name="case_number" placeholder="e.g. 2024-001" required>
+                    </div>
+                    <div class="field">
+                        <label>Case Type</label>
+                        <select name="case_type" required>
+                            <option value="">— Select Court —</option>
+                            <option value="RTC">RTC — Regional Trial Court</option>
+                            <option value="1st MCTC">1st MCTC</option>
+                            <option value="2nd MCTC">2nd MCTC</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="case_title">Case Title</label>
-                    <input type="text" name="case_title" id="case_title" placeholder="Enter case title" required>
+                <!-- Case Category -->
+                <p class="form-section-title">Case Category</p>
+                <div class="category-grid">
+                    {% set categories = [
+                        'PHYSICAL INJURY',
+                        'GAMBLING/RA 9287',
+                        'MURDER/FRUS. MURDER',
+                        'HOMICIDE/FRUSTRATED HOMICIDE',
+                        'RECKLESS IMPRUDENCE',
+                        'FORESTRY LAW/RA 9262',
+                        'DRUGS/RA9165',
+                        'LEGAL POSSESSION OF FIREARMS/RA 10591',
+                        'RTC APPEALED CASES',
+                        'RTC ARCHIVED',
+                        'OTHER CRIMES',
+                        'SPECIAL PROCEEDING',
+                        'CIVIL CASE',
+                        'SEXUAL CRIMES RA8353',
+                        'ABUSES/RA9262/RA7610'
+                    ] %}
+                    {% for cat in categories %}
+                    <div class="cat-option">
+                        <input type="radio" name="case_category" id="cat_{{ loop.index }}" value="{{ cat }}" required>
+                        <label for="cat_{{ loop.index }}">{{ cat }}</label>
+                    </div>
+                    {% endfor %}
                 </div>
 
-                <div class="form-group">
-                    <label for="complainant">Complainant</label>
-                    <input type="text" name="complainant" id="complainant" placeholder="Enter complainant name" required>
+                <hr class="form-divider">
+
+                <!-- Parties -->
+                <p class="form-section-title">Parties Involved</p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label>Complainant</label>
+                        <input type="text" name="complainant" placeholder="Full name of complainant" required>
+                    </div>
+                    <div class="field">
+                        <label>Respondent</label>
+                        <input type="text" name="respondent" placeholder="Full name of respondent" required>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="respondent">Respondent</label>
-                    <input type="text" name="respondent" id="respondent" placeholder="Enter respondent name" required>
+                <hr class="form-divider">
+
+                <div class="form-footer">
+                    <a href="{{ url_for('dashboard') }}" class="btn-cancel">Cancel</a>
+                    <button type="submit" class="btn-submit">＋ Add Case</button>
                 </div>
 
-                <div class="form-group">
-                    <label for="status">Status</label>
-                    <select name="status" id="status" required>
-                        <option value="Open" selected>Open</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Closed">Closed</option>
-                    </select>
-
-                    <label for="case_type">Case Type</label>
-                    <select id="case_type" name="case_type" required>
-                        <option value="">-- Select Case Type --</option>
-                        <option value="RTC">RTC</option>
-                        <option value="1st MCTC">1st MUNICIPAL CIRCUIT TRIAL COURT</option>
-                        <option value="2nd MCTC">2nd MUNICIPAL CIRCUIT TRIAL COURT</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn submit-btn">Add Case</button>
             </form>
         </div>
-    </main>
-</body>
-</html>
+    </div>
+</div>
+
+<script>
+    // Auto-fill case title from selected category
+    document.querySelectorAll('input[name="case_category"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            document.getElementById('case_title_hidden').value = this.value;
+        });
+    });
+</script>
+
+{% endblock %}
