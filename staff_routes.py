@@ -19,6 +19,43 @@ def log_activity(user_email, action, case_id=None):
         "case_id": case_id
     }).execute()
 
+# Staff Home
+@staff_bp.route('/staff-home')
+def staff_home():
+    if 'user' not in session or session.get('role') != 'staff':
+        return redirect('/login')
+    cases = supabase.table("cases").select("*").execute().data or []
+
+    categories = [
+        "PHYSICAL INJURY",
+        "GAMBLING/RA 9287",
+        "MURDER/FRUS. MURDER",
+        "HOMICIDE/FRUSTRATED HOMICIDE",
+        "RECKLESS IMPRUDENCE",
+        "FORESTRY LAW/RA 9262",
+        "DRUGS/RA9165",
+        "LEGAL POSSESSION OF FIREARMS/RA 10591",
+        "RTC APPEALED CASES",
+        "RTC ARCHIVED",
+        "OTHER CRIMES",
+        "SPECIAL PROCEEDING",
+        "CIVIL CASE",
+        "SEXUAL CRIMES RA8353",
+        "ABUSES/RA9262/RA7610"
+    ]
+    category_counts = {cat: sum(1 for c in cases if c.get('case_title', '').upper().startswith(cat.split('/')[0].strip())) for cat in categories}
+
+    return render_template("staff_home.html",
+        total_cases=len(cases),
+        open_cases=sum(1 for c in cases if c.get('status') == 'Open'),
+        pending_cases=sum(1 for c in cases if c.get('status') == 'Pending'),
+        closed_cases=sum(1 for c in cases if c.get('status') == 'Closed'),
+        borrowed_files=sum(1 for c in cases if c.get('file_status') == 'borrowed'),
+        categories=categories,
+        category_counts=category_counts,
+        active_page='home'
+    )
+
 # ----------------------------
 # Staff Dashboard
 # ----------------------------
@@ -40,14 +77,21 @@ def staff_cases():
 
     for case in cases:
         case["signed_url"] = None
+        case["borrow_info"] = None
         if case.get("document_url"):
             try:
                 signed = supabase.storage.from_('case-documents').create_signed_url(case['document_url'], 3600)
                 case["signed_url"] = signed["signedURL"]
             except:
                 pass
+        tx = supabase.table("file_transactions").select("*").eq("case_id", case["id"]).eq("action", "borrowed").order("created_at", desc=True).limit(1).execute()
+        if tx.data:
+            borrow = tx.data[0]
+            ret = supabase.table("file_transactions").select("return_date").eq("case_id", case["id"]).eq("action", "returned").order("created_at", desc=True).limit(1).execute()
+            borrow["return_date"] = ret.data[0]["return_date"] if ret.data else None
+            case["borrow_info"] = borrow
 
-    return render_template("staff_case_list.html", user=session['user'], cases=cases, selected_type=case_type, search=search)
+    return render_template("staff_case_list.html", user=session['user'], cases=cases, selected_type=case_type, search=search, active_page='cases')
 
 # ----------------------------
 # View Case Details
@@ -131,6 +175,7 @@ def staff_borrow(case_id):
         return redirect('/login')
 
     notes = request.form.get('notes', '')
+    borrowed_by = request.form.get('borrowed_by', session['user'])
     redirect_url = '/dashboard' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
 
     supabase.table("cases").update({
@@ -140,7 +185,7 @@ def staff_borrow(case_id):
     supabase.table("file_transactions").insert({
         "case_id": case_id,
         "action": "borrowed",
-        "performed_by": session['user'],
+        "performed_by": borrowed_by,
         "case_status_after": "Open",
         "notes": notes
     }).execute()
@@ -160,6 +205,9 @@ def staff_return(case_id):
     notes = request.form.get('notes', '')
     redirect_url = '/dashboard' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
 
+    from datetime import datetime
+    return_date = datetime.now().isoformat()
+
     supabase.table("cases").update({
         "file_status": "in_storage",
         "status": case_status
@@ -170,7 +218,8 @@ def staff_return(case_id):
         "action": "returned",
         "performed_by": session['user'],
         "case_status_after": case_status,
-        "notes": notes
+        "notes": notes,
+        "return_date": return_date
     }).execute()
 
     log_activity(session['user'], "Returned file", case_id)
