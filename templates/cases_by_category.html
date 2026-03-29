@@ -1,0 +1,110 @@
+{% if session.role == 'admin' %}
+{% extends "layout.html" %}
+{% else %}
+{% extends "staff_layout.html" %}
+{% endif %}
+{% block title %}{{ category }}{% endblock %}
+{% block page_title %}{{ category }}{% endblock %}
+{% block extra_style %}
+<style>
+    .back-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px; background: white; color: #1a2a4a;
+        border: 1.5px solid #dee2e6; border-radius: 7px;
+        font-size: 13px; font-weight: 600; text-decoration: none;
+        margin-bottom: 20px; transition: background 0.2s;
+    }
+    .back-btn:hover { background: #f0f2f5; }
+
+    .cat-header {
+        background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+        border-radius: 12px; padding: 20px 24px; color: white;
+        margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .cat-header h2 { font-size: 18px; font-weight: 800; margin: 0; }
+    .cat-header .count-badge {
+        background: rgba(255,255,255,0.2); padding: 6px 16px;
+        border-radius: 20px; font-size: 14px; font-weight: 700;
+    }
+
+    .table-wrapper { overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    table th, table td { vertical-align: middle; white-space: nowrap; }
+
+    .file-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
+    .file-badge.in-storage { background-color: #27ae60; }
+    .file-badge.borrowed   { background-color: #f39c12; }
+    .file-badge.disposed   { background-color: #e74c3c; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; }
+</style>
+{% endblock %}
+{% block content %}
+
+<a href="javascript:history.back()" class="back-btn">← Back</a>
+
+<div class="cat-header">
+    <h2>📂 {{ category }}</h2>
+    <span class="count-badge">{{ cases|length }} Case{{ 's' if cases|length != 1 }}</span>
+</div>
+
+{% if cases %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Document</th>
+                <th>Case Number</th>
+                <th>Title</th>
+                <th>Case Type</th>
+                <th>Complainant</th>
+                <th>Respondent</th>
+                <th>Status</th>
+                <th>File Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for case in cases %}
+            <tr>
+                <td class="document-cell">
+                    {% if case.signed_url %}
+                        <a href="{{ case.signed_url }}" target="_blank">
+                            <img src="{{ case.signed_url }}" alt="Document" class="document-img">
+                        </a>
+                    {% else %}
+                        <span style="color:#aaa;font-size:12px">No file</span>
+                    {% endif %}
+                </td>
+                <td>{{ case.case_number }}</td>
+                <td>{{ case.case_title }}</td>
+                <td>
+                    <span class="badge {% if case.case_type == 'RTC' %}rtc{% elif case.case_type == '1st MCTC' %}first-mctc{% elif case.case_type == '2nd MCTC' %}second-mctc{% endif %}">
+                        {{ case.case_type }}
+                    </span>
+                </td>
+                <td>{{ case.complainant }}</td>
+                <td>{{ case.respondent }}</td>
+                <td>
+                    <span class="status {% if case.status == 'Open' %}open{% elif case.status == 'Pending' %}pending{% elif case.status == 'Closed' %}closed{% endif %}">
+                        {{ case.status }}
+                    </span>
+                </td>
+                <td>
+                    {% if case.file_status == 'borrowed' %}<span class="file-badge borrowed">Borrowed</span>
+                    {% elif case.file_status == 'disposed' %}<span class="file-badge disposed">Disposed</span>
+                    {% else %}<span class="file-badge in-storage">In Storage</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <p>No cases found under <strong>{{ category }}</strong></p>
+</div>
+{% endif %}
+
+{% endblock %}
