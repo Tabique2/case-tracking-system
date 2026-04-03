@@ -1,0 +1,34 @@
+{% extends "staff_layout.html" %}
+{% block title %}Profile{% endblock %}
+{% block page_title %}Profile{% endblock %}
+{% block extra_style %}
+<style>
+    .profile-card { background: white; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); max-width: 480px; overflow: hidden; }
+    .profile-header { background: linear-gradient(135deg, #1a3a6b, #2e5fad); padding: 32px; text-align: center; color: white; }
+    .profile-avatar { width: 80px; height: 80px; background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 14px; }
+    .profile-avatar i { font-size: 32px; color: white; }
+    .profile-header h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .role-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 3px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: capitalize; }
+    .profile-body { padding: 24px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .info-label { color: #888; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+    .info-row .info-value { color: #1a2a4a; font-weight: 600; }
+</style>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<div class="profile-card">
+    <div class="profile-header">
+        <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
+        <h2>{{ user.email }}</h2>
+        <span class="role-badge">{{ user.role }}</span>
+    </div>
+    <div class="profile-body">
+        <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ user.email }}</span></div>
+        <div class="info-row"><span class="info-label">Role</span><span class="info-value" style="text-transform:capitalize">{{ user.role }}</span></div>
+        <div class="info-row"><span class="info-label">Office</span><span class="info-value">Prosecutor's Office</span></div>
+        <div class="info-row"><span class="info-label">Location</span><span class="info-value">Manolo Fortich, Bukidnon</span></div>
+    </div>
+</div>
+{% endblock %}

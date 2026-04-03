@@ -145,9 +145,9 @@ def add_case():
             case_id = result.data[0]['id']
             log_activity(session['user'], "Added a case", case_id)
 
-        return redirect('/dashboard')
+        return redirect('/staff-cases' if session.get('role') == 'staff' else '/dashboard')
 
-    return render_template("add_case.html")
+    return render_template("add_case.html", active_page='add_case')
 
 #Edit Case
 @app.route('/edit-case/<case_id>', methods=['GET', 'POST'])
@@ -368,7 +368,26 @@ def home_page():
         "SEXUAL CRIMES RA8353",
         "ABUSES/RA9262/RA7610"
     ]
-    category_counts = {cat: sum(1 for c in cases if c.get('case_title', '').upper().startswith(cat.split('/')[0].strip())) for cat in categories}
+    mctc1_categories = [
+        "P.D. 1602",
+        "R.A. 9287",
+        "PHYSICAL INJURIES",
+        "ATTEMPTED HOMICIDE",
+        "ACTS OF LASCIVIOUSNESS",
+        "ORAL DEFAMATION",
+        "CRIMES AGAINST PROPERTY THEFT",
+        "MALICIOUS",
+        "ESTAFA",
+        "RECKLESS IMPRUDENCE RESULTING PHYSICAL INJURIES AND DAMAGE PROPERTY",
+        "GRAVE THREAT",
+        "DIRECT ASSAULT",
+        "GRAVE COERCION",
+        "OTHER CRIMES"
+    ]
+    rtc_cases = [c for c in cases if c.get('case_type') == 'RTC']
+    mctc1_cases = [c for c in cases if c.get('case_type') == '1st MCTC']
+    category_counts = {cat: sum(1 for c in rtc_cases if c.get('case_title', '').upper() == cat.upper()) for cat in categories}
+    mctc1_counts = {cat: sum(1 for c in mctc1_cases if c.get('case_title', '').upper() == cat.upper()) for cat in mctc1_categories}
 
     return render_template("home.html",
         total_cases=len(cases),
@@ -379,6 +398,8 @@ def home_page():
         total_users=len(users),
         categories=categories,
         category_counts=category_counts,
+        mctc1_categories=mctc1_categories,
+        mctc1_counts=mctc1_counts,
         active_page='home'
     )
 
@@ -389,7 +410,7 @@ def cases_by_category():
         return redirect('/login')
     category = request.args.get('category', '')
     cases = supabase.table("cases").select("*").execute().data or []
-    filtered = [c for c in cases if c.get('case_title', '').upper().startswith(category.split('/')[0].strip())]
+    filtered = [c for c in cases if c.get('case_title', '').upper() == category.upper()]
     for case in filtered:
         case["signed_url"] = None
         if case.get("document_url"):
@@ -408,7 +429,8 @@ def profile():
         return redirect('/login')
     response = supabase.table("users").select("*").eq("email", session['user']).execute()
     user = response.data[0] if response.data else {}
-    return render_template("profile.html", user=user, active_page='profile')
+    template = "profile_staff.html" if session.get('role') == 'staff' else "profile.html"
+    return render_template(template, user=user, active_page='profile')
 
 # Activity Logs
 @app.route('/activity-logs')
@@ -418,7 +440,8 @@ def activity_logs():
 
     response = supabase.table("activity_logs").select("*").order("created_at", desc=True).execute()
     logs = response.data if response.data else []
-    return render_template("activity_logs.html", logs=logs, active_page='logs')
+    template = "activity_logs_staff.html" if session.get('role') == 'staff' else "activity_logs.html"
+    return render_template(template, logs=logs, active_page='logs')
 
 from staff_routes import staff_bp
 app.register_blueprint(staff_bp)

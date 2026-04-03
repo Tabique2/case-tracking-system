@@ -43,7 +43,26 @@ def staff_home():
         "SEXUAL CRIMES RA8353",
         "ABUSES/RA9262/RA7610"
     ]
-    category_counts = {cat: sum(1 for c in cases if c.get('case_title', '').upper().startswith(cat.split('/')[0].strip())) for cat in categories}
+    mctc1_categories = [
+        "P.D. 1602",
+        "R.A. 9287",
+        "PHYSICAL INJURIES",
+        "ATTEMPTED HOMICIDE",
+        "ACTS OF LASCIVIOUSNESS",
+        "ORAL DEFAMATION",
+        "CRIMES AGAINST PROPERTY THEFT",
+        "MALICIOUS",
+        "ESTAFA",
+        "RECKLESS IMPRUDENCE RESULTING PHYSICAL INJURIES AND DAMAGE PROPERTY",
+        "GRAVE THREAT",
+        "DIRECT ASSAULT",
+        "GRAVE COERCION",
+        "OTHER CRIMES"
+    ]
+    rtc_cases = [c for c in cases if c.get('case_type') == 'RTC']
+    mctc1_cases = [c for c in cases if c.get('case_type') == '1st MCTC']
+    category_counts = {cat: sum(1 for c in rtc_cases if c.get('case_title', '').upper() == cat.upper()) for cat in categories}
+    mctc1_counts = {cat: sum(1 for c in mctc1_cases if c.get('case_title', '').upper() == cat.upper()) for cat in mctc1_categories}
 
     return render_template("staff_home.html",
         total_cases=len(cases),
@@ -53,6 +72,8 @@ def staff_home():
         borrowed_files=sum(1 for c in cases if c.get('file_status') == 'borrowed'),
         categories=categories,
         category_counts=category_counts,
+        mctc1_categories=mctc1_categories,
+        mctc1_counts=mctc1_counts,
         active_page='home'
     )
 
@@ -223,6 +244,25 @@ def staff_return(case_id):
     }).execute()
 
     log_activity(session['user'], "Returned file", case_id)
+    return redirect(redirect_url)
+
+# ----------------------------
+# Undisposed File
+# ----------------------------
+@staff_bp.route('/staff-undisposed/<case_id>', methods=['POST'])
+def staff_undisposed(case_id):
+    if 'user' not in session:
+        return redirect('/login')
+
+    notes = request.form.get('notes', '')
+    redirect_url = '/dashboard' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
+
+    supabase.table("cases").update({
+        "file_status": "in_storage",
+        "status": "Open"
+    }).eq("id", case_id).execute()
+
+    log_activity(session['user'], "Undisposed file", case_id)
     return redirect(redirect_url)
 
 # ----------------------------

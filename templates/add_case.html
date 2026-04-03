@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% if session['role'] == 'staff' %}{% extends "staff_layout.html" %}{% else %}{% extends "layout.html" %}{% endif %}
 {% block title %}Add Case{% endblock %}
 {% block page_title %}Add New Case{% endblock %}
 {% block extra_style %}
@@ -247,8 +247,8 @@
 
                 <!-- Case Category -->
                 <p class="form-section-title">Case Category</p>
-                <div class="category-grid">
-                    {% set categories = [
+                <div class="category-grid" id="cat-rtc">
+                    {% set rtc_cats = [
                         'PHYSICAL INJURY',
                         'GAMBLING/RA 9287',
                         'MURDER/FRUS. MURDER',
@@ -265,10 +265,59 @@
                         'SEXUAL CRIMES RA8353',
                         'ABUSES/RA9262/RA7610'
                     ] %}
-                    {% for cat in categories %}
+                    {% for cat in rtc_cats %}
                     <div class="cat-option">
-                        <input type="radio" name="case_category" id="cat_{{ loop.index }}" value="{{ cat }}" required>
-                        <label for="cat_{{ loop.index }}">{{ cat }}</label>
+                        <input type="radio" name="case_category" id="rtc_{{ loop.index }}" value="{{ cat }}">
+                        <label for="rtc_{{ loop.index }}">{{ cat }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="category-grid" id="cat-mctc1" style="display:none">
+                    {% set mctc1_cats = [
+                        'P.D. 1602',
+                        'R.A. 9287',
+                        'PHYSICAL INJURIES',
+                        'ATTEMPTED HOMICIDE',
+                        'ACTS OF LASCIVIOUSNESS',
+                        'ORAL DEFAMATION',
+                        'CRIMES AGAINST PROPERTY THEFT',
+                        'MALICIOUS',
+                        'ESTAFA',
+                        'RECKLESS IMPRUDENCE RESULTING PHYSICAL INJURIES AND DAMAGE PROPERTY',
+                        'GRAVE THREAT',
+                        'DIRECT ASSAULT',
+                        'GRAVE COERCION',
+                        'OTHER CRIMES'
+                    ] %}
+                    {% for cat in mctc1_cats %}
+                    <div class="cat-option">
+                        <input type="radio" name="case_category" id="mctc1_{{ loop.index }}" value="{{ cat }}">
+                        <label for="mctc1_{{ loop.index }}">{{ cat }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="category-grid" id="cat-mctc2" style="display:none">
+                    {% set rtc_cats = [
+                        'PHYSICAL INJURY',
+                        'GAMBLING/RA 9287',
+                        'MURDER/FRUS. MURDER',
+                        'HOMICIDE/FRUSTRATED HOMICIDE',
+                        'RECKLESS IMPRUDENCE',
+                        'FORESTRY LAW/RA 9262',
+                        'DRUGS/RA9165',
+                        'LEGAL POSSESSION OF FIREARMS/RA 10591',
+                        'RTC APPEALED CASES',
+                        'RTC ARCHIVED',
+                        'OTHER CRIMES',
+                        'SPECIAL PROCEEDING',
+                        'CIVIL CASE',
+                        'SEXUAL CRIMES RA8353',
+                        'ABUSES/RA9262/RA7610'
+                    ] %}
+                    {% for cat in rtc_cats %}
+                    <div class="cat-option">
+                        <input type="radio" name="case_category" id="mctc2_{{ loop.index }}" value="{{ cat }}">
+                        <label for="mctc2_{{ loop.index }}">{{ cat }}</label>
                     </div>
                     {% endfor %}
                 </div>
@@ -291,7 +340,7 @@
                 <hr class="form-divider">
 
                 <div class="form-footer">
-                    <a href="{{ url_for('dashboard') }}" class="btn-cancel">Cancel</a>
+                    <a href="{% if session['role'] == 'staff' %}/staff-cases{% else %}{{ url_for('dashboard') }}{% endif %}" class="btn-cancel">Cancel</a>
                     <button type="submit" class="btn-submit">＋ Add Case</button>
                 </div>
 
@@ -301,12 +350,25 @@
 </div>
 
 <script>
-    // Auto-fill case title from selected category
-    document.querySelectorAll('input[name="case_category"]').forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            document.getElementById('case_title_hidden').value = this.value;
+    const caseTypeSelect = document.querySelector('select[name="case_type"]');
+    const grids = { 'RTC': 'cat-rtc', '1st MCTC': 'cat-mctc1', '2nd MCTC': 'cat-mctc2' };
+
+    function updateCategoryGrid() {
+        const val = caseTypeSelect.value;
+        Object.values(grids).forEach(id => {
+            const el = document.getElementById(id);
+            el.style.display = 'none';
+            el.querySelectorAll('input[type="radio"]').forEach(r => r.required = false);
         });
-    });
+        if (val && grids[val]) {
+            const active = document.getElementById(grids[val]);
+            active.style.display = 'grid';
+            active.querySelectorAll('input[type="radio"]')[0].required = true;
+        }
+    }
+
+    caseTypeSelect.addEventListener('change', updateCategoryGrid);
+    updateCategoryGrid();
 </script>
 
 {% endblock %}

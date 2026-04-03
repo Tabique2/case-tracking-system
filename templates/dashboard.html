@@ -43,20 +43,20 @@
     .doc-thumb:hover { transform: scale(1.05); }
     .doc-cell { text-align: center; min-width: 120px; width: 120px; }
     .upload-inline { display: flex; flex-direction: column; gap: 4px; align-items: center; width: 100%; }
+    .upload-inline input[type="file"] { font-size: 10px; width: 100%; margin-bottom: 3px; max-width: 100px; }
 
     .actions-cell { display: flex; flex-direction: column; gap: 4px; min-width: 95px; }
     .actions-cell form { margin: 0; }
     .btn-act { display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 5px 8px; font-size: 11px; font-weight: 700; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; transition: opacity 0.15s, transform 0.1s; }
     .btn-act i { font-size: 10px; }
     .btn-act:hover { opacity: 0.85; transform: translateY(-1px); }
-    .act-edit    { background: #dbeafe; color: #1e40af; }
-    .act-delete  { background: #fee2e2; color: #991b1b; }
-    .act-borrow  { background: #fff7ed; color: #9a3412; }
-    .act-return  { background: #dcfce7; color: #166534; }
-    .act-dispose { background: #fce7f3; color: #9d174d; }
-    .act-upload  { background: #f1f5f9; color: #475569; }
-
-    .upload-inline input[type="file"] { font-size: 10px; width: 100%; margin-bottom: 3px; max-width: 100px; }
+    .act-edit      { background: #dbeafe; color: #1e40af; }
+    .act-delete    { background: #fee2e2; color: #991b1b; }
+    .act-borrow    { background: #fff7ed; color: #9a3412; }
+    .act-return    { background: #dcfce7; color: #166534; }
+    .act-dispose   { background: #fce7f3; color: #9d174d; }
+    .act-undispose { background: #ede9fe; color: #5b21b6; }
+    .act-upload    { background: #f1f5f9; color: #475569; }
 
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,25,50,0.55); z-index: 999; justify-content: center; align-items: center; padding: 16px; }
     .modal-card { background: white; border-radius: 14px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
@@ -73,10 +73,11 @@
     .modal-footer { padding: 14px 22px; border-top: 1px solid #f0f2f5; display: flex; gap: 10px; }
     .modal-footer button { flex: 1; padding: 10px; font-size: 13px; font-weight: 700; border: none; border-radius: 7px; cursor: pointer; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .modal-footer button:hover { opacity: 0.88; }
-    .btn-modal-borrow  { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
-    .btn-modal-return  { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
-    .btn-modal-dispose { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
-    .btn-modal-cancel  { background: #f1f5f9; color: #475569; }
+    .btn-modal-borrow    { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .btn-modal-return    { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+    .btn-modal-dispose   { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+    .btn-modal-undispose { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; }
+    .btn-modal-cancel    { background: #f1f5f9; color: #475569; }
 
     .empty-state { text-align: center; padding: 60px 20px; }
     .empty-state i { font-size: 48px; color: #cbd5e1; margin-bottom: 14px; display: block; }
@@ -210,7 +211,9 @@
                             <i class="fa-solid fa-box-archive"></i> Dispose
                         </button>
                     {% else %}
-                        <span class="file-pill file-disposed" style="font-size:10px"><i class="fa-solid fa-box-archive"></i> Disposed</span>
+                        <button class="btn-act act-undispose" onclick="document.getElementById('undispose-modal-{{ case.id }}').style.display='flex'">
+                            <i class="fa-solid fa-rotate-right"></i> Undispose
+                        </button>
                     {% endif %}
                 </div>
             </td>
@@ -268,6 +271,8 @@
                     <button class="btn-act act-return full" onclick="document.getElementById('return-modal-{{ case.id }}').style.display='flex'"><i class="fa-solid fa-rotate-left"></i> Return</button>
                     {% endif %}
                     <button class="btn-act act-dispose full" onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'"><i class="fa-solid fa-box-archive"></i> Dispose</button>
+                {% else %}
+                    <button class="btn-act act-undispose full" onclick="document.getElementById('undispose-modal-{{ case.id }}').style.display='flex'"><i class="fa-solid fa-rotate-right"></i> Undispose</button>
                 {% endif %}
             </div>
         </div>
@@ -339,6 +344,26 @@
             <div class="modal-footer">
                 <button type="submit" class="btn-modal-dispose"><i class="fa-solid fa-check"></i> Confirm Dispose</button>
                 <button type="button" class="btn-modal-cancel" onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% if case.file_status == 'disposed' %}
+<div id="undispose-modal-{{ case.id }}" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h5><i class="fa-solid fa-rotate-right"></i> Undispose File — {{ case.case_number }}</h5>
+            <button class="modal-close" onclick="document.getElementById('undispose-modal-{{ case.id }}').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form method="POST" action="/staff-undisposed/{{ case.id }}">
+            <div class="modal-body">
+                <label>Notes (optional)</label>
+                <input type="text" name="notes" placeholder="Reason for undisposing...">
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn-modal-undispose"><i class="fa-solid fa-check"></i> Confirm Undispose</button>
+                <button type="button" class="btn-modal-cancel" onclick="document.getElementById('undispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
             </div>
         </form>
     </div>

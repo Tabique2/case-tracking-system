@@ -1,0 +1,35 @@
+{% extends "staff_layout.html" %}
+{% block title %}Activity Logs{% endblock %}
+{% block page_title %}Activity Logs{% endblock %}
+{% block content %}
+
+<div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow:hidden">
+    {% if logs %}
+    <div style="overflow-x:auto">
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Case ID</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.user_email }}</td>
+                <td>{{ log.action }}</td>
+                <td>{{ log.case_id or '-' }}</td>
+                <td>{{ log.created_at[:19].replace('T', ' ') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+        <p style="padding:24px;color:#aaa;text-align:center">No activity logs found.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
