@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - Case Tracking System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            background: #f0f2f5;
+            display: flex;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #0f1e36 0%, #1a3a6b 60%, #2e5fad 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            width: 400px; height: 400px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 50%;
+            top: -100px; right: -100px;
+        }
+        .left-panel::after {
+            content: '';
+            position: absolute;
+            width: 300px; height: 300px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 50%;
+            bottom: -80px; left: -80px;
+        }
+
+        .left-content { position: relative; z-index: 1; text-align: center; color: white; }
+
+        .shield-wrap {
+            width: 100px; height: 100px;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 28px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .shield-wrap i { font-size: 44px; color: rgba(255,255,255,0.9); }
+
+        .left-content h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; line-height: 1.3; }
+        .left-content p { font-size: 14px; opacity: 0.65; line-height: 1.7; max-width: 300px; margin: 0 auto; }
+
+        .divider { width: 48px; height: 3px; background: #f0c040; border-radius: 2px; margin: 20px auto; }
+
+        .steps { margin-top: 36px; display: flex; flex-direction: column; gap: 16px; text-align: left; }
+        .step { display: flex; align-items: center; gap: 14px; }
+        .step-num {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700; flex-shrink: 0;
+        }
+        .step-text { font-size: 13px; opacity: 0.75; }
+
+        /* Right Panel */
+        .right-panel {
+            width: 480px;
+            min-height: 100vh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 52px 44px;
+            box-shadow: -4px 0 24px rgba(0,0,0,0.06);
+        }
+
+        .top-bar {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 44px;
+        }
+        .logo-circle {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .logo-circle i { color: white; font-size: 18px; }
+        .logo-text { font-size: 11px; font-weight: 700; color: #1a3a6b; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
+
+        .form-title { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+        .form-subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+
+        .email-chip {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: #eff6ff; border: 1.5px solid #bfdbfe;
+            padding: 6px 14px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; color: #1e40af;
+            margin-bottom: 32px;
+        }
+        .email-chip i { font-size: 11px; }
+
+        .alert-box {
+            display: flex; align-items: center; gap: 10px;
+            background: #fef2f2; border: 1.5px solid #fecaca;
+            border-radius: 10px; padding: 12px 16px;
+            margin-bottom: 24px; font-size: 13px; font-weight: 600; color: #dc2626;
+        }
+        .alert-box i { font-size: 15px; flex-shrink: 0; }
+
+        .otp-label {
+            font-size: 11px; font-weight: 700; color: #64748b;
+            text-transform: uppercase; letter-spacing: 0.8px;
+            margin-bottom: 14px;
+        }
+
+        .otp-inputs {
+            display: flex; gap: 8px; justify-content: center; margin-bottom: 10px;
+        }
+        .otp-inputs input {
+            width: 44px; height: 44px;
+            text-align: center; font-size: 18px; font-weight: 800;
+            border: 2px solid #e2e8f0; border-radius: 10px;
+            color: #0f172a; background: #f8fafc;
+            transition: all 0.2s; outline: none;
+            caret-color: #2e5fad;
+        }
+        .otp-inputs input:focus {
+            border-color: #2e5fad;
+            box-shadow: 0 0 0 4px rgba(46,95,173,0.1);
+            background: white; transform: translateY(-2px);
+        }
+        .otp-inputs input.filled {
+            border-color: #2e5fad;
+            background: #eff6ff; color: #1e40af;
+        }
+        .otp-inputs input.invalid {
+            border-color: #ef4444;
+            background: #fff5f5; color: #dc2626;
+            box-shadow: 0 0 0 4px rgba(239,68,68,0.08);
+        }
+
+        .timer-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 28px; margin-top: 6px;
+        }
+        .timer {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 12px; font-weight: 600; color: #94a3b8;
+        }
+        .timer i { font-size: 11px; }
+        .timer .time-val { color: #0f172a; font-weight: 700; font-size: 13px; }
+        .timer.urgent .time-val { color: #ef4444; }
+
+        .progress-bar {
+            height: 3px; background: #f1f5f9; border-radius: 2px;
+            margin-bottom: 28px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #1a3a6b, #2e5fad);
+            border-radius: 2px; transition: width 1s linear;
+            width: 100%;
+        }
+        .progress-fill.urgent { background: linear-gradient(90deg, #ef4444, #f97316); }
+
+        .btn-verify {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+            color: white; border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(30,60,120,0.25);
+            transition: opacity 0.2s, transform 0.1s;
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            letter-spacing: 0.3px;
+        }
+        .btn-verify:hover { opacity: 0.92; transform: translateY(-1px); }
+        .btn-verify:active { transform: translateY(0); }
+        .btn-verify:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .back-link {
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            margin-top: 20px; font-size: 13px; color: #94a3b8;
+            text-decoration: none; font-weight: 600; transition: color 0.15s;
+        }
+        .back-link:hover { color: #2e5fad; }
+        .back-link i { font-size: 11px; }
+
+        .security-note {
+            display: flex; align-items: center; gap: 8px;
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 8px; padding: 10px 14px;
+            margin-top: 24px; font-size: 11px; color: #94a3b8; font-weight: 600;
+        }
+        .security-note i { color: #2e5fad; font-size: 12px; flex-shrink: 0; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .left-panel { padding: 32px 24px; min-height: 200px; flex: none; }
+            .left-panel .steps { display: none; }
+            .shield-wrap { width: 64px; height: 64px; border-radius: 18px; margin-bottom: 16px; }
+            .shield-wrap i { font-size: 28px; }
+            .left-content h1 { font-size: 20px; }
+            .right-panel { width: 100%; padding: 32px 24px; min-height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Left Panel -->
+<div class="left-panel">
+    <div class="left-content">
+        <div class="shield-wrap"><i class="fa-solid fa-shield-halved"></i></div>
+        <h1>Two-Factor<br>Authentication</h1>
+        <div class="divider"></div>
+        <p>Your account is protected with an extra layer of security.</p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">Enter your email & password</div>
+            </div>
+            <div class="step">
+                <div class="step-num" style="background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.5);color:white">2</div>
+                <div class="step-text" style="opacity:1;font-weight:600">Enter the OTP sent to your email</div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">Access granted</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Right Panel -->
+<div class="right-panel">
+
+    <div class="top-bar">
+        <div class="logo-circle"><i class="fa-solid fa-scale-balanced"></i></div>
+        <div class="logo-text">Prosecutor's Office<br>Manolo Fortich, Bukidnon</div>
+    </div>
+
+    <div class="form-title">Check your email</div>
+    <div class="form-subtitle">We sent a 6-digit verification code to</div>
+    <div class="email-chip"><i class="fa-solid fa-envelope"></i> {{ email }}</div>
+
+    {% if error == 'invalid' %}
+    <div class="alert-box">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        Invalid code. Please check your email and try again.
+    </div>
+    {% endif %}
+
+    <form method="POST" id="otpForm">
+        <input type="hidden" name="otp" id="otpHidden">
+
+        <div class="otp-label">Enter verification code</div>
+        <div class="otp-inputs">
+            <input type="text" maxlength="1" class="otp-box {% if error %}invalid{% endif %}" inputmode="numeric" autocomplete="off">
+            <input type="text" maxlength="1" class="otp-box {% if error %}invalid{% endif %}" inputmode="numeric" autocomplete="off">
+            <input type="text" maxlength="1" class="otp-box {% if error %}invalid{% endif %}" inputmode="numeric" autocomplete="off">
+            <input type="text" maxlength="1" class="otp-box {% if error %}invalid{% endif %}" inputmode="numeric" autocomplete="off">
+            <input type="text" maxlength="1" class="otp-box {% if error %}invalid{% endif %}" inputmode="numeric" autocomplete="off">
+            <input type="text" maxlength="1" class="otp-box {% if error %}invalid{% endif %}" inputmode="numeric" autocomplete="off">
+        </div>
+
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+        <div class="timer-row">
+            <div class="timer" id="timerEl">
+                <i class="fa-solid fa-clock"></i> Code expires in <span class="time-val" id="countdown">5:00</span>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-verify" id="submitBtn" disabled>
+            <i class="fa-solid fa-check-circle"></i> Verify & Sign In
+        </button>
+    </form>
+
+    <a href="/login" class="back-link">
+        <i class="fa-solid fa-arrow-left"></i> Back to Login
+    </a>
+
+    <div class="security-note">
+        <i class="fa-solid fa-lock"></i>
+        Never share your OTP with anyone. This code is valid for 5 minutes only.
+    </div>
+
+</div>
+
+<script>
+const boxes = document.querySelectorAll('.otp-box');
+const hidden = document.getElementById('otpHidden');
+const form = document.getElementById('otpForm');
+const submitBtn = document.getElementById('submitBtn');
+
+function updateHidden() {
+    hidden.value = Array.from(boxes).map(b => b.value).join('');
+    const filled = Array.from(boxes).every(b => b.value !== '');
+    submitBtn.disabled = !filled;
+}
+
+boxes.forEach((box, i) => {
+    box.addEventListener('input', () => {
+        box.value = box.value.replace(/\D/g, '');
+        if (box.value) {
+            box.classList.add('filled');
+            box.classList.remove('invalid');
+            if (i < boxes.length - 1) boxes[i + 1].focus();
+        } else {
+            box.classList.remove('filled');
+        }
+        updateHidden();
+    });
+    box.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !box.value && i > 0) {
+            boxes[i - 1].value = '';
+            boxes[i - 1].classList.remove('filled');
+            boxes[i - 1].focus();
+            updateHidden();
+        }
+    });
+    box.addEventListener('paste', e => {
+        e.preventDefault();
+        const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        text.split('').forEach((ch, j) => {
+            if (boxes[j]) { boxes[j].value = ch; boxes[j].classList.add('filled'); }
+        });
+        const next = boxes[Math.min(text.length, 5)];
+        if (next) next.focus();
+        updateHidden();
+    });
+});
+
+form.addEventListener('submit', e => {
+    updateHidden();
+    if (hidden.value.length < 6) e.preventDefault();
+});
+
+// Countdown + progress bar
+const totalSeconds = 300;
+let seconds = totalSeconds;
+const countdown = document.getElementById('countdown');
+const timerEl = document.getElementById('timerEl');
+const progressFill = document.getElementById('progressFill');
+
+const timer = setInterval(() => {
+    seconds--;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    countdown.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    progressFill.style.width = `${(seconds / totalSeconds) * 100}%`;
+
+    if (seconds <= 60) {
+        timerEl.classList.add('urgent');
+        progressFill.classList.add('urgent');
+    }
+    if (seconds <= 0) {
+        clearInterval(timer);
+        countdown.textContent = 'Expired';
+        progressFill.style.width = '0%';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-clock"></i> Code Expired';
+    }
+}, 1000);
+
+boxes[0].focus();
+</script>
+
+</body>
+</html>
