@@ -297,24 +297,23 @@
                     {% endfor %}
                 </div>
                 <div class="category-grid" id="cat-mctc2" style="display:none">
-                    {% set rtc_cats = [
-                        'PHYSICAL INJURY',
-                        'GAMBLING/RA 9287',
-                        'MURDER/FRUS. MURDER',
-                        'HOMICIDE/FRUSTRATED HOMICIDE',
-                        'RECKLESS IMPRUDENCE',
-                        'FORESTRY LAW/RA 9262',
-                        'DRUGS/RA9165',
-                        'LEGAL POSSESSION OF FIREARMS/RA 10591',
-                        'RTC APPEALED CASES',
-                        'RTC ARCHIVED',
-                        'OTHER CRIMES',
-                        'SPECIAL PROCEEDING',
-                        'CIVIL CASE',
-                        'SEXUAL CRIMES RA8353',
-                        'ABUSES/RA9262/RA7610'
+                    {% set mctc2_cats = [
+                        'P.D. 1602',
+                        'R.A. 9287',
+                        'PHYSICAL INJURIES',
+                        'ATTEMPTED HOMICIDE',
+                        'ACTS OF LASCIVIOUSNESS',
+                        'ORAL DEFAMATION',
+                        'CRIMES AGAINST PROPERTY THEFT',
+                        'MALICIOUS',
+                        'ESTAFA',
+                        'RECKLESS IMPRUDENCE RESULTING PHYSICAL INJURIES AND DAMAGE PROPERTY',
+                        'GRAVE THREAT',
+                        'DIRECT ASSAULT',
+                        'GRAVE COERCION',
+                        'OTHER CRIMES'
                     ] %}
-                    {% for cat in rtc_cats %}
+                    {% for cat in mctc2_cats %}
                     <div class="cat-option">
                         <input type="radio" name="case_category" id="mctc2_{{ loop.index }}" value="{{ cat }}">
                         <label for="mctc2_{{ loop.index }}">{{ cat }}</label>

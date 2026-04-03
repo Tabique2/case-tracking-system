@@ -59,10 +59,28 @@ def staff_home():
         "GRAVE COERCION",
         "OTHER CRIMES"
     ]
+    mctc2_categories = [
+        "P.D. 1602",
+        "R.A. 9287",
+        "PHYSICAL INJURIES",
+        "ATTEMPTED HOMICIDE",
+        "ACTS OF LASCIVIOUSNESS",
+        "ORAL DEFAMATION",
+        "CRIMES AGAINST PROPERTY THEFT",
+        "MALICIOUS",
+        "ESTAFA",
+        "RECKLESS IMPRUDENCE RESULTING PHYSICAL INJURIES AND DAMAGE PROPERTY",
+        "GRAVE THREAT",
+        "DIRECT ASSAULT",
+        "GRAVE COERCION",
+        "OTHER CRIMES"
+    ]
     rtc_cases = [c for c in cases if c.get('case_type') == 'RTC']
     mctc1_cases = [c for c in cases if c.get('case_type') == '1st MCTC']
+    mctc2_cases = [c for c in cases if c.get('case_type') == '2nd MCTC']
     category_counts = {cat: sum(1 for c in rtc_cases if c.get('case_title', '').upper() == cat.upper()) for cat in categories}
     mctc1_counts = {cat: sum(1 for c in mctc1_cases if c.get('case_title', '').upper() == cat.upper()) for cat in mctc1_categories}
+    mctc2_counts = {cat: sum(1 for c in mctc2_cases if c.get('case_title', '').upper() == cat.upper()) for cat in mctc2_categories}
 
     return render_template("staff_home.html",
         total_cases=len(cases),
@@ -74,6 +92,8 @@ def staff_home():
         category_counts=category_counts,
         mctc1_categories=mctc1_categories,
         mctc1_counts=mctc1_counts,
+        mctc2_categories=mctc2_categories,
+        mctc2_counts=mctc2_counts,
         active_page='home'
     )
 
