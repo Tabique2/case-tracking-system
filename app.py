@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, session
+from flask_cors import CORS
 from supabase import create_client
 import os
 from dotenv import load_dotenv
@@ -11,6 +12,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "secret123"  # Session management
+CORS(app, supports_credentials=True)
 
 # Connect to Supabase
 supabase = create_client(
@@ -504,7 +506,9 @@ def verify_otp():
     return render_template('verify_otp.html', error=error, email=session.get('otp_email'))
 
 from staff_routes import staff_bp
+from api import api_bp
 app.register_blueprint(staff_bp)
+app.register_blueprint(api_bp)
 
 # Run app
 if __name__ == '__main__':
