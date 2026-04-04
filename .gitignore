@@ -1,1 +1,7 @@
 .env
+.tokens.json
+cookies.txt
+*.json.bak
+__pycache__/
+*.pyc
+test_mail.py
