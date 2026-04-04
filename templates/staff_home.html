@@ -211,9 +211,15 @@
 </div>
 
 <div id="tab-mctc2" class="tab-panel">
-    <div class="coming-soon">
-        <i class="fa-solid fa-hourglass-half"></i>
-        <p>2nd MCTC categories coming soon</p>
+    <div class="cat-grid">
+        {% for cat in mctc2_categories %}
+        <a href="/cases-by-category?category={{ cat | urlencode }}" class="cat-box">
+            <div class="cat-icon"><i class="fa-solid fa-gavel"></i></div>
+            <div class="cat-name">{{ cat }}</div>
+            <div class="cat-count">{{ mctc2_counts[cat] }}</div>
+            <div class="cat-sub"><i class="fa-solid fa-folder"></i> Total Cases</div>
+        </a>
+        {% endfor %}
     </div>
 </div>
 

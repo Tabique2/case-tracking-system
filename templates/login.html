@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Case Tracking System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -185,10 +186,25 @@
             line-height: 1.6;
         }
 
-        .footer-note span {
-            color: #2e5fad;
-            font-weight: 600;
+        .field-group input.invalid {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
         }
+
+        .field-error {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 11px; font-weight: 600; color: #ef4444;
+            margin-top: 5px;
+        }
+        .field-error i { font-size: 10px; }
+
+        .alert-box {
+            display: flex; align-items: center; gap: 10px;
+            background: #fef2f2; border: 1.5px solid #fecaca;
+            border-radius: 8px; padding: 11px 14px;
+            margin-bottom: 20px; font-size: 13px; font-weight: 600; color: #dc2626;
+        }
+        .alert-box i { font-size: 14px; flex-shrink: 0; }
 
         /* ── Mobile ── */
         @media (max-width: 768px) {
@@ -239,15 +255,32 @@
         <div class="form-title">Welcome Back</div>
         <div class="form-subtitle">Sign in to access the Case Tracking System</div>
 
+        {% if error == 'email' %}
+        <div class="alert-box"><i class="fa-solid fa-circle-exclamation"></i> No account found with that email address.</div>
+        {% elif error == 'password' %}
+        <div class="alert-box"><i class="fa-solid fa-circle-exclamation"></i> Incorrect password. Please try again.</div>
+        {% elif request.args.get('otp_expired') %}
+        <div class="alert-box"><i class="fa-solid fa-clock"></i> Your OTP code expired. Please login again.</div>
+        {% endif %}
+
         <form method="POST">
             <div class="field-group">
                 <label>Email Address</label>
-                <input type="email" name="email" placeholder="Enter your email" required>
+                <input type="email" name="email" placeholder="Enter your email" required
+                    value="{{ email or '' }}"
+                    class="{% if error == 'email' %}invalid{% endif %}">
+                {% if error == 'email' %}
+                <div class="field-error"><i class="fa-solid fa-circle-exclamation"></i> Email not found</div>
+                {% endif %}
             </div>
 
             <div class="field-group">
                 <label>Password</label>
-                <input type="password" name="password" placeholder="Enter your password" required>
+                <input type="password" name="password" placeholder="Enter your password" required
+                    class="{% if error == 'password' %}invalid{% endif %}">
+                {% if error == 'password' %}
+                <div class="field-error"><i class="fa-solid fa-circle-exclamation"></i> Incorrect password</div>
+                {% endif %}
             </div>
 
             <button type="submit" class="btn-login">Sign In</button>

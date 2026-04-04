@@ -1,12 +1,18 @@
 from flask import Flask, render_template, request, redirect, session
+from flask_cors import CORS
 from supabase import create_client
 import os
 from dotenv import load_dotenv
+import random
+import smtplib
+from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "secret123"  # Session management
+CORS(app, supports_credentials=True)
 
 # Connect to Supabase
 supabase = create_client(
@@ -34,6 +40,21 @@ def log_activity(user_email, action, case_id=None):
     }
     supabase.table("activity_logs").insert(data).execute()
 
+def send_otp_email(to_email, otp):
+    msg = MIMEText(f"""Your OTP login code is:
+
+    {otp}
+
+This code expires in 5 minutes. Do not share it with anyone.
+
+— Prosecutor's Office Case Tracking System""")
+    msg['Subject'] = 'Your OTP Login Code'
+    msg['From'] = os.getenv('MAIL_EMAIL')
+    msg['To'] = to_email
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(os.getenv('MAIL_EMAIL'), os.getenv('MAIL_PASSWORD'))
+        smtp.send_message(msg)
+
 # ----------------------------
 # Routes
 # ----------------------------
@@ -53,18 +74,17 @@ def login():
         if response.data:
             user = response.data[0]
             if user['password'] == password:
-                session['user'] = user['email']
-                session['role'] = user['role']  # store role in session
-
-                # Redirect based on role
-                if user['role'] == 'admin':
-                    return redirect('/home')
-                elif user['role'] == 'staff':
-                    return redirect('/staff-home')
+                otp = str(random.randint(100000, 999999))
+                session['otp'] = otp
+                session['otp_email'] = email
+                session['otp_role'] = user['role']
+                session['otp_expiry'] = (datetime.now() + timedelta(minutes=5)).isoformat()
+                send_otp_email(email, otp)
+                return redirect('/verify-otp')
             else:
-                return "Wrong password ❌"
+                return render_template('login.html', error='password', email=email)
         else:
-            return "User not found ❌"
+            return render_template('login.html', error='email', email='')
     return render_template("login.html")
 
 # Logout
@@ -384,10 +404,28 @@ def home_page():
         "GRAVE COERCION",
         "OTHER CRIMES"
     ]
+    mctc2_categories = [
+        "P.D. 1602",
+        "R.A. 9287",
+        "PHYSICAL INJURIES",
+        "ATTEMPTED HOMICIDE",
+        "ACTS OF LASCIVIOUSNESS",
+        "ORAL DEFAMATION",
+        "CRIMES AGAINST PROPERTY THEFT",
+        "MALICIOUS",
+        "ESTAFA",
+        "RECKLESS IMPRUDENCE RESULTING PHYSICAL INJURIES AND DAMAGE PROPERTY",
+        "GRAVE THREAT",
+        "DIRECT ASSAULT",
+        "GRAVE COERCION",
+        "OTHER CRIMES"
+    ]
     rtc_cases = [c for c in cases if c.get('case_type') == 'RTC']
     mctc1_cases = [c for c in cases if c.get('case_type') == '1st MCTC']
+    mctc2_cases = [c for c in cases if c.get('case_type') == '2nd MCTC']
     category_counts = {cat: sum(1 for c in rtc_cases if c.get('case_title', '').upper() == cat.upper()) for cat in categories}
     mctc1_counts = {cat: sum(1 for c in mctc1_cases if c.get('case_title', '').upper() == cat.upper()) for cat in mctc1_categories}
+    mctc2_counts = {cat: sum(1 for c in mctc2_cases if c.get('case_title', '').upper() == cat.upper()) for cat in mctc2_categories}
 
     return render_template("home.html",
         total_cases=len(cases),
@@ -400,6 +438,8 @@ def home_page():
         category_counts=category_counts,
         mctc1_categories=mctc1_categories,
         mctc1_counts=mctc1_counts,
+        mctc2_categories=mctc2_categories,
+        mctc2_counts=mctc2_counts,
         active_page='home'
     )
 
@@ -443,8 +483,32 @@ def activity_logs():
     template = "activity_logs_staff.html" if session.get('role') == 'staff' else "activity_logs.html"
     return render_template(template, logs=logs, active_page='logs')
 
+# Verify OTP
+@app.route('/verify-otp', methods=['GET', 'POST'])
+def verify_otp():
+    if 'otp' not in session:
+        return redirect('/login')
+    error = None
+    if request.method == 'POST':
+        entered = request.form['otp'].strip()
+        expiry = datetime.fromisoformat(session['otp_expiry'])
+        if datetime.now() > expiry:
+            session.clear()
+            return redirect('/login?otp_expired=1')
+        if entered == session['otp']:
+            session['user'] = session.pop('otp_email')
+            session['role'] = session.pop('otp_role')
+            session.pop('otp', None)
+            session.pop('otp_expiry', None)
+            return redirect('/home' if session['role'] == 'admin' else '/staff-home')
+        else:
+            error = 'invalid'
+    return render_template('verify_otp.html', error=error, email=session.get('otp_email'))
+
 from staff_routes import staff_bp
+from api import api_bp
 app.register_blueprint(staff_bp)
+app.register_blueprint(api_bp)
 
 # Run app
 if __name__ == '__main__':

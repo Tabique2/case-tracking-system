@@ -1,19 +1,219 @@
-<!-- templates/staff_upload.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Upload Document</title>
-</head>
-<body>
-    <h1>Upload Document for Case {{ case.case_number }}</h1>
+{% extends "staff_layout.html" %}
+{% block title %}Upload Document{% endblock %}
+{% block page_title %}Upload Document{% endblock %}
+{% block extra_style %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    .upload-wrapper { max-width: 560px; margin: 0 auto; }
 
-    <form method="post" enctype="multipart/form-data">
-        <input type="file" name="document" required>
-        <button type="submit">Upload</button>
-    </form>
+    .back-btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 8px 16px; background: white; color: #475569;
+        border: 1.5px solid #e2e8f0; border-radius: 8px;
+        font-size: 13px; font-weight: 600; text-decoration: none;
+        margin-bottom: 20px; transition: background 0.15s;
+    }
+    .back-btn:hover { background: #f8fafc; }
 
-    <br>
-    <a href="/staff-cases">Back to Cases</a>
-</body>
-</html>
+    .case-info-bar {
+        background: linear-gradient(135deg, #0f1e36, #1a3a6b);
+        border-radius: 12px; padding: 16px 20px;
+        color: white; margin-bottom: 20px;
+        display: flex; align-items: center; gap: 14px;
+    }
+    .case-info-bar .ci-icon {
+        width: 42px; height: 42px; background: rgba(255,255,255,0.1);
+        border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .case-info-bar .ci-icon i { font-size: 18px; color: rgba(255,255,255,0.85); }
+    .case-info-bar .ci-num { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .case-info-bar .ci-title { font-size: 14px; font-weight: 700; margin-top: 2px; }
+
+    .upload-card {
+        background: white; border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden;
+    }
+    .upload-card-header {
+        padding: 16px 22px; border-bottom: 1px solid #f0f2f5;
+        display: flex; align-items: center; gap: 8px;
+        font-size: 14px; font-weight: 700; color: #0f172a;
+    }
+    .upload-card-header i { color: #2e5fad; }
+    .upload-card-body { padding: 24px 22px; }
+
+    .drop-zone {
+        border: 2px dashed #cbd5e1; border-radius: 12px;
+        padding: 40px 20px; text-align: center;
+        cursor: pointer; transition: all 0.2s; background: #f8fafc;
+        position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: #2e5fad; background: #eff6ff;
+    }
+    .drop-zone input[type="file"] {
+        position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-zone .dz-icon {
+        width: 56px; height: 56px; background: #eff6ff;
+        border-radius: 14px; display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 14px;
+    }
+    .drop-zone .dz-icon i { font-size: 24px; color: #2e5fad; }
+    .drop-zone .dz-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+    .drop-zone .dz-sub { font-size: 12px; color: #94a3b8; }
+    .drop-zone .dz-sub span { color: #2e5fad; font-weight: 600; }
+
+    .file-preview {
+        display: none; margin-top: 16px;
+        background: #f8fafc; border: 1.5px solid #e2e8f0;
+        border-radius: 10px; padding: 12px 16px;
+        align-items: center; gap: 12px;
+    }
+    .file-preview.show { display: flex; }
+    .fp-icon { width: 40px; height: 40px; background: #eff6ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .fp-icon i { color: #2e5fad; font-size: 18px; }
+    .fp-info { flex: 1; min-width: 0; }
+    .fp-name { font-size: 13px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fp-size { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+    .fp-remove { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 4px; }
+    .fp-remove:hover { color: #ef4444; }
+
+    .img-preview-wrap { display: none; margin-top: 16px; text-align: center; }
+    .img-preview-wrap.show { display: block; }
+    .img-preview-wrap img { max-width: 100%; max-height: 220px; border-radius: 10px; border: 1.5px solid #e2e8f0; object-fit: contain; }
+
+    .btn-upload {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        width: 100%; padding: 12px; margin-top: 20px;
+        background: linear-gradient(135deg, #1a3a6b, #2e5fad);
+        color: white; border: none; border-radius: 10px;
+        font-size: 14px; font-weight: 700; cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-upload:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-upload:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .allowed-types { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .type-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #f1f5f9; border-radius: 20px; font-size: 11px; font-weight: 600; color: #64748b; }
+    .type-badge i { font-size: 10px; }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="upload-wrapper">
+
+    <a href="/staff-cases" class="back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Back to Cases
+    </a>
+
+    <div class="case-info-bar">
+        <div class="ci-icon"><i class="fa-solid fa-folder-open"></i></div>
+        <div>
+            <div class="ci-num">Case Number</div>
+            <div class="ci-title">{{ case.case_number }} — {{ case.case_title }}</div>
+        </div>
+    </div>
+
+    <div class="upload-card">
+        <div class="upload-card-header">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Document
+        </div>
+        <div class="upload-card-body">
+            <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                <div class="drop-zone" id="dropZone">
+                    <input type="file" name="document" id="fileInput" accept="image/*,.pdf" required>
+                    <div class="dz-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <div class="dz-title">Drag & drop your file here</div>
+                    <div class="dz-sub">or <span>browse to upload</span></div>
+                </div>
+
+                <div class="img-preview-wrap" id="imgPreview">
+                    <img id="previewImg" src="" alt="Preview">
+                </div>
+
+                <div class="file-preview" id="filePreview">
+                    <div class="fp-icon"><i class="fa-solid fa-file-image" id="fpIcon"></i></div>
+                    <div class="fp-info">
+                        <div class="fp-name" id="fpName">—</div>
+                        <div class="fp-size" id="fpSize">—</div>
+                    </div>
+                    <button type="button" class="fp-remove" id="fpRemove" title="Remove">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="allowed-types">
+                    <span class="type-badge"><i class="fa-solid fa-image"></i> JPG</span>
+                    <span class="type-badge"><i class="fa-solid fa-image"></i> PNG</span>
+                    <span class="type-badge"><i class="fa-solid fa-file-pdf"></i> PDF</span>
+                </div>
+
+                <button type="submit" class="btn-upload" id="submitBtn" disabled>
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload Document
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const filePreview = document.getElementById('filePreview');
+const imgPreview = document.getElementById('imgPreview');
+const previewImg = document.getElementById('previewImg');
+const fpName = document.getElementById('fpName');
+const fpSize = document.getElementById('fpSize');
+const fpIcon = document.getElementById('fpIcon');
+const fpRemove = document.getElementById('fpRemove');
+const submitBtn = document.getElementById('submitBtn');
+
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function handleFile(file) {
+    if (!file) return;
+    fpName.textContent = file.name;
+    fpSize.textContent = formatSize(file.size);
+    fpIcon.className = file.type === 'application/pdf' ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-image';
+    filePreview.classList.add('show');
+    submitBtn.disabled = false;
+
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = e => { previewImg.src = e.target.result; imgPreview.classList.add('show'); };
+        reader.readAsDataURL(file);
+    } else {
+        imgPreview.classList.remove('show');
+    }
+}
+
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+        handleFile(file);
+    }
+});
+
+fpRemove.addEventListener('click', () => {
+    fileInput.value = '';
+    filePreview.classList.remove('show');
+    imgPreview.classList.remove('show');
+    submitBtn.disabled = true;
+});
+</script>
+
+{% endblock %}

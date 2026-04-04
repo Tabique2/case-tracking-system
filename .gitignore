@@ -1,1 +1,6 @@
 .env
+.tokens.json
+*.json.bak
+__pycache__/
+*.pyc
+test_mail.py
