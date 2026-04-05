@@ -40,7 +40,7 @@ def log_activity(user_email, action, case_id=None):
     supabase.table("activity_logs").insert(data).execute()
 
 def send_otp_email(to_email, otp):
-    http_requests.post(
+    response = http_requests.post(
         'https://api.brevo.com/v3/smtp/email',
         headers={
             'api-key': os.getenv('BREVO_API_KEY'),
@@ -53,6 +53,7 @@ def send_otp_email(to_email, otp):
             'textContent': f"Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor's Office Case Tracking System"
         }
     )
+    print(f"Brevo response: {response.status_code} - {response.text}")
 
 # ----------------------------
 # Routes
@@ -481,6 +482,17 @@ def activity_logs():
     logs = response.data if response.data else []
     template = "activity_logs_staff.html" if session.get('role') == 'staff' else "activity_logs.html"
     return render_template(template, logs=logs, active_page='logs')
+
+# Resend OTP
+@app.route('/resend-otp', methods=['POST'])
+def resend_otp():
+    if 'otp_email' not in session:
+        return redirect('/login')
+    otp = str(random.randint(100000, 999999))
+    session['otp'] = otp
+    session['otp_expiry'] = (datetime.now() + timedelta(minutes=5)).isoformat()
+    send_otp_email(session['otp_email'], otp)
+    return redirect('/verify-otp')
 
 # Verify OTP
 @app.route('/verify-otp', methods=['GET', 'POST'])
