@@ -4,8 +4,7 @@ from supabase import create_client
 import os
 from dotenv import load_dotenv
 import random
-import smtplib
-from email.mime.text import MIMEText
+import requests as http_requests
 from datetime import datetime, timedelta
 
 load_dotenv()
@@ -41,15 +40,19 @@ def log_activity(user_email, action, case_id=None):
     supabase.table("activity_logs").insert(data).execute()
 
 def send_otp_email(to_email, otp):
-    msg = MIMEText(f"Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor's Office Case Tracking System")
-    msg['Subject'] = 'Your OTP Login Code'
-    msg['From'] = os.getenv('BREVO_EMAIL')
-    msg['To'] = to_email
-    with smtplib.SMTP('smtp-relay.brevo.com', 587) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.login(os.getenv('BREVO_EMAIL'), os.getenv('BREVO_PASSWORD'))
-        smtp.send_message(msg)
+    http_requests.post(
+        'https://api.brevo.com/v3/smtp/email',
+        headers={
+            'api-key': os.getenv('BREVO_API_KEY'),
+            'Content-Type': 'application/json'
+        },
+        json={
+            'sender': {'name': "Prosecutor's Office", 'email': os.getenv('BREVO_EMAIL')},
+            'to': [{'email': to_email}],
+            'subject': 'Your OTP Login Code',
+            'textContent': f"Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor's Office Case Tracking System"
+        }
+    )
 
 # ----------------------------
 # Routes
