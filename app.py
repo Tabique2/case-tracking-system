@@ -4,7 +4,7 @@ from supabase import create_client
 import os
 from dotenv import load_dotenv
 import random
-import requests as http_requests
+import resend
 from datetime import datetime, timedelta
 
 load_dotenv()
@@ -40,20 +40,13 @@ def log_activity(user_email, action, case_id=None):
     supabase.table("activity_logs").insert(data).execute()
 
 def send_otp_email(to_email, otp):
-    response = http_requests.post(
-        'https://api.brevo.com/v3/smtp/email',
-        headers={
-            'api-key': os.getenv('BREVO_API_KEY'),
-            'Content-Type': 'application/json'
-        },
-        json={
-            'sender': {'name': "Prosecutor's Office", 'email': os.getenv('BREVO_EMAIL')},
-            'to': [{'email': to_email}],
-            'subject': 'Your OTP Login Code',
-            'textContent': f"Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor's Office Case Tracking System"
-        }
-    )
-    print(f"Brevo response: {response.status_code} - {response.text}")
+    resend.api_key = os.getenv('RESEND_API_KEY')
+    resend.Emails.send({
+        "from": "onboarding@resend.dev",
+        "to": to_email,
+        "subject": "Your OTP Login Code",
+        "text": f"Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor's Office Case Tracking System"
+    })
 
 # ----------------------------
 # Routes
