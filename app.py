@@ -51,7 +51,9 @@ This code expires in 5 minutes. Do not share it with anyone.
     msg['Subject'] = 'Your OTP Login Code'
     msg['From'] = os.getenv('MAIL_EMAIL')
     msg['To'] = to_email
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+    with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
         smtp.login(os.getenv('MAIL_EMAIL'), os.getenv('MAIL_PASSWORD'))
         smtp.send_message(msg)
 
@@ -512,4 +514,5 @@ app.register_blueprint(api_bp)
 
 # Run app
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
