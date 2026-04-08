@@ -40,7 +40,19 @@ def log_activity(user_email, action, case_id=None):
     supabase.table("activity_logs").insert(data).execute()
 
 def send_otp_email(to_email, otp):
-    supabase.auth.sign_in_with_otp({"email": to_email})
+    http_requests.post(
+        'https://api.resend.com/emails',
+        headers={
+            'Authorization': f'Bearer {os.getenv("RESEND_API_KEY")}',
+            'Content-Type': 'application/json'
+        },
+        json={
+            'from': 'onboarding@resend.dev',
+            'to': [to_email],
+            'subject': 'Your OTP Login Code',
+            'text': f'Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor\'s Office Case Tracking System'
+        }
+    )
 
 # ----------------------------
 # Routes
