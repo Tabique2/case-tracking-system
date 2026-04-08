@@ -40,20 +40,7 @@ def log_activity(user_email, action, case_id=None):
     supabase.table("activity_logs").insert(data).execute()
 
 def send_otp_email(to_email, otp):
-    response = http_requests.post(
-        'https://api.resend.com/emails',
-        headers={
-            'Authorization': f'Bearer {os.getenv("RESEND_API_KEY")}',
-            'Content-Type': 'application/json'
-        },
-        json={
-            'from': 'onboarding@resend.dev',
-            'to': [to_email],
-            'subject': 'Your OTP Login Code',
-            'text': f'Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor\'s Office Case Tracking System'
-        }
-    )
-    print(f"Resend response: {response.status_code} - {response.text}")
+    supabase.auth.sign_in_with_otp({"email": to_email})
 
 # ----------------------------
 # Routes
@@ -70,21 +57,26 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
-        response = supabase.table("users").select("*").eq("email", email).execute()
-        if response.data:
-            user = response.data[0]
-            if user['password'] == password:
+        try:
+            auth_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+            user = auth_response.user
+            if user:
+                # Get role from custom users table
+                role_response = supabase.table("users").select("role").eq("email", email).execute()
+                role = role_response.data[0]['role'] if role_response.data else 'staff'
                 otp = str(random.randint(100000, 999999))
                 session['otp'] = otp
                 session['otp_email'] = email
-                session['otp_role'] = user['role']
+                session['otp_role'] = role
                 session['otp_expiry'] = (datetime.now() + timedelta(minutes=5)).isoformat()
                 send_otp_email(email, otp)
                 return redirect('/verify-otp')
-            else:
+        except Exception as e:
+            print(f"Login error: {e}")
+            if 'Invalid login credentials' in str(e):
                 return render_template('login.html', error='password', email=email)
-        else:
             return render_template('login.html', error='email', email='')
+    return render_template("login.html")
     return render_template("login.html")
 
 # Logout
@@ -497,22 +489,27 @@ def resend_otp():
 # Verify OTP
 @app.route('/verify-otp', methods=['GET', 'POST'])
 def verify_otp():
-    if 'otp' not in session:
+    if 'otp_email' not in session:
         return redirect('/login')
     error = None
     if request.method == 'POST':
         entered = request.form['otp'].strip()
-        expiry = datetime.fromisoformat(session['otp_expiry'])
-        if datetime.now() > expiry:
-            session.clear()
-            return redirect('/login?otp_expired=1')
-        if entered == session['otp']:
-            session['user'] = session.pop('otp_email')
-            session['role'] = session.pop('otp_role')
-            session.pop('otp', None)
-            session.pop('otp_expiry', None)
-            return redirect('/home' if session['role'] == 'admin' else '/staff-home')
-        else:
+        try:
+            auth_response = supabase.auth.verify_otp({
+                "email": session['otp_email'],
+                "token": entered,
+                "type": "email"
+            })
+            if auth_response.user:
+                session['user'] = session.pop('otp_email')
+                session['role'] = session.pop('otp_role')
+                session.pop('otp', None)
+                session.pop('otp_expiry', None)
+                return redirect('/home' if session['role'] == 'admin' else '/staff-home')
+            else:
+                error = 'invalid'
+        except Exception as e:
+            print(f"OTP verify error: {e}")
             error = 'invalid'
     return render_template('verify_otp.html', error=error, email=session.get('otp_email'))
 
