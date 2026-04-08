@@ -4,7 +4,8 @@ from supabase import create_client
 import os
 from dotenv import load_dotenv
 import random
-import resend
+import smtplib
+from email.mime.text import MIMEText
 from datetime import datetime, timedelta
 
 load_dotenv()
@@ -40,13 +41,13 @@ def log_activity(user_email, action, case_id=None):
     supabase.table("activity_logs").insert(data).execute()
 
 def send_otp_email(to_email, otp):
-    resend.api_key = os.getenv('RESEND_API_KEY')
-    resend.Emails.send({
-        "from": "onboarding@resend.dev",
-        "to": to_email,
-        "subject": "Your OTP Login Code",
-        "text": f"Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor's Office Case Tracking System"
-    })
+    msg = MIMEText(f"Your OTP login code is:\n\n    {otp}\n\nExpires in 5 minutes.\n\n— Prosecutor's Office Case Tracking System")
+    msg['Subject'] = 'Your OTP Login Code'
+    msg['From'] = 'onboarding@resend.dev'
+    msg['To'] = to_email
+    with smtplib.SMTP_SSL('smtp.resend.com', 465) as smtp:
+        smtp.login('resend', os.getenv('RESEND_API_KEY'))
+        smtp.send_message(msg)
 
 # ----------------------------
 # Routes
