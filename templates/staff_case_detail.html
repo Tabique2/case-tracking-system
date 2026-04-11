@@ -254,30 +254,6 @@
     </div>
 
     <!-- File Actions -->
-    {% if case.file_status == 'disposed' %}
-    <div class="action-card">
-        <div class="action-card-header">
-            <i class="fa-solid fa-sliders" style="color:#2e5fad"></i> File Actions
-        </div>
-        <div class="action-card-body">
-            <div class="action-section undispose-section">
-                <div class="action-section-title">
-                    <i class="fa-solid fa-rotate-right" style="color:#7c3aed"></i> Undispose File
-                </div>
-                <form method="POST" action="/staff-undisposed/{{ case.id }}">
-                    <div class="form-field">
-                        <label>Notes (optional)</label>
-                        <input type="text" name="notes" placeholder="Reason for undisposing...">
-                    </div>
-                    <button type="submit" class="btn-action btn-undispose" onclick="return confirm('Restore this file back to storage?')">
-                        <i class="fa-solid fa-rotate-right"></i> Confirm Undispose
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
     {% if case.file_status != 'disposed' %}
     <div class="action-card">
         <div class="action-card-header">
@@ -339,7 +315,7 @@
                         <label>Notes (optional)</label>
                         <input type="text" name="notes" placeholder="Disposal reason...">
                     </div>
-                    <button type="submit" class="btn-action btn-dispose" onclick="return confirm('Mark as disposed? This will permanently close the case.')">
+                    <button type="submit" class="btn-action btn-dispose" onclick="return confirm('Mark as disposed?')">
                         <i class="fa-solid fa-box-archive"></i> Confirm Dispose
                     </button>
                 </form>

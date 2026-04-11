@@ -150,11 +150,6 @@
                     <a href="{{ case.signed_url }}" target="_blank">
                         <img src="{{ case.signed_url }}" alt="Document" class="doc-thumb">
                     </a>
-                    <form method="POST" action="/delete-picture/{{ case.id }}" style="margin-top:4px">
-                        <button type="submit" class="btn-act act-delete" style="font-size:10px" onclick="return confirm('Delete picture?')">
-                            <i class="fa-solid fa-trash"></i> Remove
-                        </button>
-                    </form>
                 {% else %}
                     <span style="color:#cbd5e1;font-size:11px">No file</span>
                 {% endif %}
@@ -179,7 +174,6 @@
                 <div class="actions-cell">
                     <a href="/staff-case/{{ case.id }}" class="btn-act act-view"><i class="fa-solid fa-eye"></i> View</a>
                     <a href="/staff-upload/{{ case.id }}" class="btn-act act-upload"><i class="fa-solid fa-upload"></i> Upload</a>
-                    <a href="/staff-delete/{{ case.id }}" class="btn-act act-delete" onclick="return confirm('Delete this case?')"><i class="fa-solid fa-trash"></i> Delete</a>
                     {% if case.file_status != 'disposed' %}
                         {% if case.file_status == 'in_storage' or case.file_status == None %}
                         <button class="btn-act act-borrow" onclick="document.getElementById('borrow-modal-{{ case.id }}').style.display='flex'">
@@ -193,10 +187,6 @@
                         {% endif %}
                         <button class="btn-act act-dispose" onclick="document.getElementById('dispose-modal-{{ case.id }}').style.display='flex'">
                             <i class="fa-solid fa-box-archive"></i> Dispose
-                        </button>
-                    {% else %}
-                        <button class="btn-act act-undispose" onclick="document.getElementById('undispose-modal-{{ case.id }}').style.display='flex'">
-                            <i class="fa-solid fa-rotate-right"></i> Undispose
                         </button>
                     {% endif %}
         {% endfor %}
@@ -232,12 +222,6 @@
             <div class="card-actions">
                 <a href="/staff-case/{{ case.id }}" class="btn-act act-view"><i class="fa-solid fa-eye"></i> View</a>
                 <a href="/staff-upload/{{ case.id }}" class="btn-act act-upload"><i class="fa-solid fa-upload"></i> Upload</a>
-                <a href="/staff-delete/{{ case.id }}" class="btn-act act-delete full" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i> Delete</a>
-                {% if case.signed_url %}
-                <form method="POST" action="/delete-picture/{{ case.id }}" class="full">
-                    <button type="submit" class="btn-act act-delete" onclick="return confirm('Delete picture?')"><i class="fa-solid fa-trash"></i> Remove Picture</button>
-                </form>
-                {% endif %}
                 {% if case.file_status != 'disposed' %}
                     {% if case.file_status == 'in_storage' or case.file_status == None %}
                     <button class="btn-act act-borrow full" onclick="document.getElementById('borrow-modal-{{ case.id }}').style.display='flex'"><i class="fa-solid fa-arrow-up-from-bracket"></i> Borrow</button>
@@ -303,24 +287,7 @@
 </div>
 {% endif %}
 {% if case.file_status == 'disposed' %}
-<div id="undispose-modal-{{ case.id }}" class="modal-overlay">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h5><i class="fa-solid fa-rotate-right"></i> Undispose File — {{ case.case_number }}</h5>
-            <button class="modal-close" onclick="document.getElementById('undispose-modal-{{ case.id }}').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <form method="POST" action="/staff-undisposed/{{ case.id }}">
-            <div class="modal-body">
-                <label>Notes (optional)</label>
-                <input type="text" name="notes" placeholder="Reason for undisposing...">
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn-modal-undispose"><i class="fa-solid fa-check"></i> Confirm Undispose</button>
-                <button type="button" class="btn-modal-cancel" onclick="document.getElementById('undispose-modal-{{ case.id }}').style.display='none'">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
+{# undispose removed for staff #}
 {% endif %}
 {% if case.file_status != 'disposed' %}
 <div id="dispose-modal-{{ case.id }}" class="modal-overlay">

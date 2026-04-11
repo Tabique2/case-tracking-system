@@ -73,27 +73,28 @@ def login():
         try:
             auth_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
             user = auth_response.user
-            print(f"Auth user: {user}")
             if user:
                 role_response = supabase.table("users").select("role").eq("email", email).execute()
                 role = role_response.data[0]['role'] if role_response.data else 'staff'
-                print(f"Role: {role}")
-                otp = str(random.randint(100000, 999999))
-                session['otp'] = otp
-                session['otp_email'] = email
-                session['otp_role'] = role
-                session['otp_expiry'] = (datetime.now() + timedelta(minutes=5)).isoformat()
-                send_otp_email(email, otp)
-                return redirect('/verify-otp')
+                if role == 'admin':
+                    otp = str(random.randint(100000, 999999))
+                    session['otp'] = otp
+                    session['otp_email'] = email
+                    session['otp_role'] = role
+                    session['otp_expiry'] = (datetime.now() + timedelta(minutes=5)).isoformat()
+                    send_otp_email(email, otp)
+                    return redirect('/verify-otp')
+                else:
+                    session['user'] = email
+                    session['role'] = role
+                    return redirect('/staff-home')
             else:
-                print("No user returned")
                 return render_template('login.html', error='password', email=email)
         except Exception as e:
             print(f"Login error: {e}")
             if 'Invalid login credentials' in str(e):
                 return render_template('login.html', error='password', email=email)
             return render_template('login.html', error='email', email='')
-    return render_template("login.html")
     return render_template("login.html")
 
 # Logout
