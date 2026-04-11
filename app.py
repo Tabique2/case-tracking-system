@@ -387,6 +387,16 @@ def delete_user(user_id):
     if user['email'] == session['user']:
         return redirect('/manage-users?error=Cannot delete your own account')
 
+    # Delete from Supabase Auth
+    try:
+        auth_users = supabase_admin.auth.admin.list_users()
+        for auth_user in auth_users:
+            if auth_user.email == user['email']:
+                supabase_admin.auth.admin.delete_user(auth_user.id)
+                break
+    except Exception as e:
+        print(f"Auth delete error: {e}")
+
     supabase.table("users").delete().eq("id", user_id).execute()
     log_activity(session['user'], f"Deleted user: {user['email']}")
     return redirect('/manage-users')
