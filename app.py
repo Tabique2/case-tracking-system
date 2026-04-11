@@ -354,11 +354,14 @@ def create_user():
 
     # Create in Supabase Auth
     try:
+        service_key = os.getenv('SUPABASE_SERVICE_KEY')
+        print(f"Service key exists: {bool(service_key)}")
         supabase_admin.auth.admin.create_user({
             "email": email,
             "password": password,
             "email_confirm": True
         })
+        print(f"Auth user created: {email}")
     except Exception as e:
         print(f"Auth create error: {e}")
 
