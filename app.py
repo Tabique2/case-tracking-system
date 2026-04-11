@@ -18,6 +18,10 @@ supabase = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_KEY")
 )
+supabase_admin = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_SERVICE_KEY")
+)
 
 # ----------------------------
 # Utility Functions
@@ -348,6 +352,17 @@ def create_user():
     if existing.data:
         return redirect('/manage-users?error=Email already exists')
 
+    # Create in Supabase Auth
+    try:
+        supabase_admin.auth.admin.create_user({
+            "email": email,
+            "password": password,
+            "email_confirm": True
+        })
+    except Exception as e:
+        print(f"Auth create error: {e}")
+
+    # Create in users table
     supabase.table("users").insert({
         "email": email,
         "password": password,
