@@ -115,9 +115,12 @@ def dashboard():
         return redirect('/login')
 
     case_type = request.args.get('case_type')
+    search = request.args.get('search', '').strip()
     query = supabase.table("cases").select("*").order("id", desc=True)
     if case_type:
         query = query.eq("case_type", case_type)
+    if search:
+        query = query.eq("case_number", search)
 
     # Non-admins only see their own uploaded cases/documents
     if session.get('role') != 'admin':
@@ -154,6 +157,7 @@ def dashboard():
         user=session['user'],
         cases=cases,
         selected_type=case_type,
+        search=search,
         active_page='cases'
     )
 
@@ -202,8 +206,11 @@ def edit_case(case_id):
         # Show current document
         signed_url = None
         if case.get("document_url"):
-            signed_url = supabase.storage.from_('case-documents') \
-                .create_signed_url(case['document_url'], 3600)["signedURL"]
+            try:
+                signed_url = supabase.storage.from_('case-documents') \
+                    .create_signed_url(case['document_url'], 3600)["signedURL"]
+            except Exception as e:
+                print(f"Warning: Could not get signed URL: {e}")
 
         # ✅ IMPORTANT: EVERYTHING BELOW MUST BE INSIDE POST
         if request.method == 'POST':
@@ -249,6 +256,28 @@ def edit_case(case_id):
 
         # GET request (show form)
         return render_template("edit_case.html", case=case, signed_url=signed_url)
+
+# Admin Case Detail
+@app.route('/case/<case_id>')
+def case_detail(case_id):
+    if 'user' not in session or session.get('role') != 'admin':
+        return redirect('/login')
+
+    response = supabase.table("cases").select("*").eq("id", case_id).execute()
+    if not response.data:
+        return "Case not found ❌"
+    case = response.data[0]
+
+    signed_url = None
+    if case.get("document_url"):
+        try:
+            signed_url = supabase.storage.from_('case-documents').create_signed_url(case['document_url'], 3600)["signedURL"]
+        except:
+            pass
+
+    transactions = supabase.table("file_transactions").select("*").eq("case_id", case_id).order("created_at", desc=True).execute().data or []
+
+    return render_template("case_detail.html", case=case, signed_url=signed_url, transactions=transactions)
 
 # Delete Case
 @app.route('/delete-case/<case_id>')

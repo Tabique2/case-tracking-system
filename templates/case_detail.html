@@ -1,0 +1,269 @@
+{% extends "layout.html" %}
+{% block title %}Case Details{% endblock %}
+{% block page_title %}Case Details{% endblock %}
+{% block extra_style %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    .detail-wrapper { max-width: 900px; margin: 0 auto; }
+
+    .back-btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 8px 16px; background: white; color: #475569;
+        border: 1.5px solid #e2e8f0; border-radius: 8px;
+        font-size: 13px; font-weight: 600; text-decoration: none;
+        margin-bottom: 20px; transition: background 0.15s;
+    }
+    .back-btn:hover { background: #f8fafc; }
+
+    .case-header-card {
+        background: linear-gradient(135deg, #0f1e36, #1a3a6b);
+        border-radius: 14px; padding: 24px 28px; color: white;
+        margin-bottom: 20px; display: flex;
+        justify-content: space-between; align-items: flex-start;
+        flex-wrap: wrap; gap: 16px;
+    }
+    .case-header-left h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .case-num {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+        padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 10px;
+    }
+    .case-header-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hbadge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .hb-open     { background: rgba(34,197,94,0.2);  color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+    .hb-pending  { background: rgba(234,179,8,0.2);  color: #fde047; border: 1px solid rgba(234,179,8,0.3); }
+    .hb-closed   { background: rgba(148,163,184,0.2);color: #cbd5e1; border: 1px solid rgba(148,163,184,0.3); }
+    .hb-storage  { background: rgba(34,197,94,0.2);  color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+    .hb-borrowed { background: rgba(249,115,22,0.2); color: #fdba74; border: 1px solid rgba(249,115,22,0.3); }
+    .hb-disposed { background: rgba(239,68,68,0.2);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+
+    .case-header-doc img { width: 100px; height: 75px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); }
+    .no-doc {
+        width: 100px; height: 75px; background: rgba(255,255,255,0.08);
+        border: 2px dashed rgba(255,255,255,0.2); border-radius: 8px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 4px; color: rgba(255,255,255,0.4); font-size: 11px;
+    }
+    .no-doc i { font-size: 20px; }
+
+    .info-card { background: white; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 18px; overflow: hidden; }
+    .info-card-header { padding: 14px 20px; border-bottom: 1px solid #f0f2f5; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #0f172a; }
+    .info-card-header i { color: #2e5fad; }
+    .info-card-body { padding: 20px; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .info-field { display: flex; flex-direction: column; gap: 4px; }
+    .f-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; }
+    .f-value { font-size: 14px; font-weight: 600; color: #1e293b; }
+
+    .action-card { background: white; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 18px; overflow: hidden; }
+    .action-card-header { padding: 14px 20px; border-bottom: 1px solid #f0f2f5; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #0f172a; }
+    .action-card-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+    .action-section { padding: 16px; border-radius: 10px; border: 1.5px solid #f0f2f5; }
+    .action-section-title { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .borrow-section  { border-color: #fed7aa; background: #fffbf5; }
+    .return-section  { border-color: #bbf7d0; background: #f0fdf4; }
+    .dispose-section { border-color: #fecaca; background: #fff5f5; }
+    .undispose-section { border-color: #ddd6fe; background: #f5f3ff; }
+    .edit-section    { border-color: #bfdbfe; background: #eff6ff; }
+
+    .form-field { margin-bottom: 12px; }
+    .form-field label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px; }
+    .form-field input, .form-field select { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 7px; font-size: 13px; background: white; box-sizing: border-box; }
+    .form-field input:focus, .form-field select:focus { border-color: #2e5fad; outline: none; }
+
+    .btn-action { display: inline-flex; align-items: center; gap: 7px; padding: 9px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.2s, transform 0.1s; text-decoration: none; }
+    .btn-action:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-borrow    { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .btn-return    { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+    .btn-dispose   { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+    .btn-undispose { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; }
+    .btn-edit      { background: linear-gradient(135deg, #2e5fad, #1a3a6b); color: white; }
+    .btn-delete    { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+
+    .tx-table { width: 100%; border-collapse: collapse; }
+    .tx-table thead tr { background: #f8fafc; }
+    .tx-table thead th { padding: 10px 14px; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid #f0f2f5; }
+    .tx-table tbody tr { border-bottom: 1px solid #f8fafc; }
+    .tx-table tbody tr:hover { background: #f8fafc; }
+    .tx-table tbody tr:last-child { border-bottom: none; }
+    .tx-table tbody td { padding: 12px 14px; font-size: 13px; color: #334155; vertical-align: middle; }
+
+    .tx-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .tx-borrowed  { background: #fff7ed; color: #9a3412; }
+    .tx-returned  { background: #dcfce7; color: #166534; }
+    .tx-disposed  { background: #fee2e2; color: #991b1b; }
+    .tx-undisposed { background: #f5f3ff; color: #5b21b6; }
+
+    .no-tx { text-align: center; padding: 32px; color: #94a3b8; }
+    .no-tx i { font-size: 28px; display: block; margin-bottom: 8px; color: #cbd5e1; }
+    .no-tx p { font-size: 13px; font-weight: 600; }
+
+    @media (max-width: 600px) {
+        .info-grid { grid-template-columns: 1fr; }
+        .case-header-card { flex-direction: column; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="detail-wrapper">
+
+    <a href="/dashboard" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to Cases</a>
+
+    <!-- Case Header -->
+    <div class="case-header-card">
+        <div class="case-header-left">
+            <div class="case-num"><i class="fa-solid fa-hashtag"></i> {{ case.case_number }}</div>
+            <h2>{{ case.case_title }}</h2>
+            <div class="case-header-badges">
+                <span class="hbadge {% if case.status == 'Open' %}hb-open{% elif case.status == 'Pending' %}hb-pending{% else %}hb-closed{% endif %}">
+                    <i class="fa-solid fa-circle-dot"></i> {{ case.status }}
+                </span>
+                <span class="hbadge {% if case.file_status == 'borrowed' %}hb-borrowed{% elif case.file_status == 'disposed' %}hb-disposed{% else %}hb-storage{% endif %}">
+                    <i class="fa-solid fa-box"></i>
+                    {% if case.file_status == 'borrowed' %}Borrowed
+                    {% elif case.file_status == 'disposed' %}Disposed
+                    {% else %}In Storage{% endif %}
+                </span>
+                <span class="hbadge" style="background:rgba(99,102,241,0.2);color:#c7d2fe;border:1px solid rgba(99,102,241,0.3)">
+                    <i class="fa-solid fa-tag"></i> {{ case.case_type }}
+                </span>
+            </div>
+        </div>
+        <div class="case-header-doc">
+            {% if signed_url %}
+                <a href="{{ signed_url }}" target="_blank"><img src="{{ signed_url }}" alt="Document"></a>
+            {% else %}
+                <div class="no-doc"><i class="fa-solid fa-file-slash"></i><span>No file</span></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Case Info -->
+    <div class="info-card">
+        <div class="info-card-header"><i class="fa-solid fa-circle-info"></i> Case Information</div>
+        <div class="info-card-body">
+            <div class="info-grid">
+                <div class="info-field"><span class="f-label">Case Number</span><span class="f-value">{{ case.case_number }}</span></div>
+                <div class="info-field"><span class="f-label">Case Type</span><span class="f-value">{{ case.case_type }}</span></div>
+                <div class="info-field"><span class="f-label">Complainant</span><span class="f-value">{{ case.complainant }}</span></div>
+                <div class="info-field"><span class="f-label">Respondent</span><span class="f-value">{{ case.respondent }}</span></div>
+                <div class="info-field"><span class="f-label">Case Status</span><span class="f-value">{{ case.status }}</span></div>
+                <div class="info-field"><span class="f-label">File Status</span><span class="f-value">
+                    {% if case.file_status == 'borrowed' %}Borrowed
+                    {% elif case.file_status == 'disposed' %}Disposed
+                    {% else %}In Storage{% endif %}
+                </span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Actions -->
+    <div class="action-card">
+        <div class="action-card-header"><i class="fa-solid fa-sliders" style="color:#2e5fad"></i> Actions</div>
+        <div class="action-card-body">
+
+            <!-- Edit / Delete -->
+            <div class="action-section edit-section">
+                <div class="action-section-title"><i class="fa-solid fa-pen" style="color:#2e5fad"></i> Manage Case</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <a href="/edit-case/{{ case.id }}" class="btn-action btn-edit"><i class="fa-solid fa-pen"></i> Edit Case</a>
+                    <a href="/delete-case/{{ case.id }}" class="btn-action btn-delete" onclick="return confirm('Delete this case?')"><i class="fa-solid fa-trash"></i> Delete Case</a>
+                </div>
+            </div>
+
+            {% if case.file_status != 'disposed' %}
+
+            {% if case.file_status == 'in_storage' or case.file_status == None %}
+            <div class="action-section borrow-section">
+                <div class="action-section-title"><i class="fa-solid fa-arrow-up-from-bracket" style="color:#f97316"></i> Borrow File</div>
+                <form method="POST" action="/staff-borrow/{{ case.id }}">
+                    <div class="form-field"><label>Borrowed By</label><input type="text" name="borrowed_by" placeholder="Enter name of borrower" required></div>
+                    <div class="form-field"><label>Notes (optional)</label><input type="text" name="notes" placeholder="Reason for borrowing..."></div>
+                    <button type="submit" class="btn-action btn-borrow" onclick="return confirm('Borrow this file?')"><i class="fa-solid fa-arrow-up-from-bracket"></i> Confirm Borrow</button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% if case.file_status == 'borrowed' %}
+            <div class="action-section return-section">
+                <div class="action-section-title"><i class="fa-solid fa-rotate-left" style="color:#16a34a"></i> Return File</div>
+                <form method="POST" action="/staff-return/{{ case.id }}">
+                    <div class="form-field">
+                        <label>Set Case Status After Return</label>
+                        <select name="case_status"><option value="Open">Open</option><option value="Closed">Closed</option></select>
+                    </div>
+                    <div class="form-field"><label>Notes (optional)</label><input type="text" name="notes" placeholder="Return notes..."></div>
+                    <button type="submit" class="btn-action btn-return" onclick="return confirm('Return this file?')"><i class="fa-solid fa-rotate-left"></i> Confirm Return</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="action-section dispose-section">
+                <div class="action-section-title"><i class="fa-solid fa-box-archive" style="color:#dc2626"></i> Dispose File</div>
+                <form method="POST" action="/staff-disposed/{{ case.id }}">
+                    <div class="form-field"><label>Notes (optional)</label><input type="text" name="notes" placeholder="Disposal reason..."></div>
+                    <button type="submit" class="btn-action btn-dispose" onclick="return confirm('Mark as disposed?')"><i class="fa-solid fa-box-archive"></i> Confirm Dispose</button>
+                </form>
+            </div>
+
+            {% else %}
+            <div class="action-section undispose-section">
+                <div class="action-section-title"><i class="fa-solid fa-rotate-right" style="color:#7c3aed"></i> Undispose File</div>
+                <form method="POST" action="/staff-undisposed/{{ case.id }}">
+                    <div class="form-field"><label>Notes (optional)</label><input type="text" name="notes" placeholder="Reason for undisposing..."></div>
+                    <button type="submit" class="btn-action btn-undispose" onclick="return confirm('Undispose this file?')"><i class="fa-solid fa-rotate-right"></i> Confirm Undispose</button>
+                </form>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- File Transaction History -->
+    <div class="info-card">
+        <div class="info-card-header"><i class="fa-solid fa-clock-rotate-left"></i> File Transaction History</div>
+        <div class="info-card-body" style="padding:0">
+            {% if transactions %}
+            <div style="overflow-x:auto">
+            <table class="tx-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Performed By</th>
+                        <th>Case Status After</th>
+                        <th>Notes</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>
+                            {% if t.action == 'borrowed' %}<span class="tx-badge tx-borrowed"><i class="fa-solid fa-arrow-up-from-bracket"></i> Borrowed</span>
+                            {% elif t.action == 'returned' %}<span class="tx-badge tx-returned"><i class="fa-solid fa-rotate-left"></i> Returned</span>
+                            {% elif t.action == 'undisposed' %}<span class="tx-badge tx-undisposed"><i class="fa-solid fa-rotate-right"></i> Undisposed</span>
+                            {% else %}<span class="tx-badge tx-disposed"><i class="fa-solid fa-box-archive"></i> Disposed</span>{% endif %}
+                        </td>
+                        <td>{{ t.performed_by }}</td>
+                        <td>{{ t.case_status_after }}</td>
+                        <td style="color:#94a3b8">{{ t.notes or '—' }}</td>
+                        <td style="color:#94a3b8;font-size:12px">{{ t.created_at[:19].replace('T', ' ') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+            <div class="no-tx">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <p>No transactions yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

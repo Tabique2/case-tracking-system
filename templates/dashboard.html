@@ -111,13 +111,16 @@
 
 <div class="cases-topbar">
     <form method="GET" action="{{ url_for('dashboard') }}" class="filter-group">
+        <label>Search Case No.</label>
+        <input type="text" name="search" placeholder="e.g. 25-06-9000" value="{{ search }}" style="padding:7px 12px;border:1.5px solid #e0e4ea;border-radius:7px;font-size:13px;background:#f8f9fb;min-width:180px;">
         <label>Filter by Type</label>
-        <select name="case_type" onchange="this.form.submit()">
+        <select name="case_type">
             <option value="">All Types</option>
             <option value="RTC"      {% if selected_type == 'RTC' %}selected{% endif %}>RTC</option>
             <option value="1st MCTC" {% if selected_type == '1st MCTC' %}selected{% endif %}>1st MCTC</option>
             <option value="2nd MCTC" {% if selected_type == '2nd MCTC' %}selected{% endif %}>2nd MCTC</option>
         </select>
+        <button type="submit" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:linear-gradient(135deg,#1a3a6b,#2e5fad);color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
     </form>
     <a href="{{ url_for('add_case') }}" class="btn-add">
         <i class="fa-solid fa-plus"></i> Add Case
@@ -194,6 +197,7 @@
             <td style="font-size:12px;color:#555">{{ case.borrow_info.return_date[:19].replace('T',' ') if case.borrow_info and case.borrow_info.return_date else '—' }}</td>
             <td>
                 <div class="actions-cell">
+                    <a href="/case/{{ case.id }}" class="btn-act act-view" style="background:#e0f2fe;color:#0369a1"><i class="fa-solid fa-eye"></i> View</a>
                     <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn-act act-edit"><i class="fa-solid fa-pen"></i> Edit</a>
                     <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn-act act-delete" onclick="return confirm('Delete this case?')"><i class="fa-solid fa-trash"></i> Delete</a>
                     {% if case.file_status != 'disposed' %}
@@ -251,6 +255,7 @@
             <div class="card-row"><span class="lbl">Return Date</span><span class="val">{{ case.borrow_info.return_date[:10] if case.borrow_info.return_date else '—' }}</span></div>
             {% endif %}
             <div class="card-actions">
+                <a href="/case/{{ case.id }}" class="btn-act act-view" style="background:#e0f2fe;color:#0369a1"><i class="fa-solid fa-eye"></i> View</a>
                 <a href="{{ url_for('edit_case', case_id=case.id) }}" class="btn-act act-edit"><i class="fa-solid fa-pen"></i> Edit</a>
                 <a href="{{ url_for('delete_case', case_id=case.id) }}" class="btn-act act-delete" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i> Delete</a>
                 {% if case.signed_url %}

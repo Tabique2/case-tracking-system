@@ -112,7 +112,7 @@ def staff_cases():
     if case_type:
         query = query.eq("case_type", case_type)
     if search:
-        query = query.ilike("case_title", f"%{search}%")
+        query = query.eq("case_number", search.strip())
 
     cases = query.execute().data or []
 
@@ -217,7 +217,7 @@ def staff_borrow(case_id):
 
     notes = request.form.get('notes', '')
     borrowed_by = request.form.get('borrowed_by', session['user'])
-    redirect_url = '/dashboard' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
+    redirect_url = f'/case/{case_id}' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
 
     supabase.table("cases").update({
         "file_status": "borrowed"
@@ -244,7 +244,7 @@ def staff_return(case_id):
 
     case_status = request.form.get('case_status', 'Open')
     notes = request.form.get('notes', '')
-    redirect_url = '/dashboard' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
+    redirect_url = f'/case/{case_id}' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
 
     from datetime import datetime
     return_date = datetime.now().isoformat()
@@ -275,7 +275,7 @@ def staff_undisposed(case_id):
         return redirect('/login')
 
     notes = request.form.get('notes', '')
-    redirect_url = '/dashboard' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
+    redirect_url = f'/case/{case_id}' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
 
     supabase.table("cases").update({
         "file_status": "in_storage",
@@ -294,7 +294,7 @@ def staff_disposed(case_id):
         return redirect('/login')
 
     notes = request.form.get('notes', '')
-    redirect_url = '/dashboard' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
+    redirect_url = f'/case/{case_id}' if session.get('role') == 'admin' else f'/staff-case/{case_id}'
 
     supabase.table("cases").update({
         "file_status": "disposed",
