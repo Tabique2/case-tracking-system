@@ -1,0 +1,108 @@
+{% if session.role == 'admin' %}{% extends "layout.html" %}{% else %}{% extends "staff_layout.html" %}{% endif %}
+{% block title %}Borrowed Cases{% endblock %}
+{% block page_title %}Borrowed Cases{% endblock %}
+{% block extra_style %}
+<style>
+    .page-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+    }
+    .page-header h2 { font-size: 18px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+    .page-header h2 i { color: #f97316; }
+    .back-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px; background: white; border: 1.5px solid #e2e8f0;
+        border-radius: 8px; font-size: 13px; font-weight: 600; color: #475569;
+        text-decoration: none; transition: all 0.15s;
+    }
+    .back-btn:hover { border-color: #2e5fad; color: #2e5fad; }
+
+    .borrowed-table-wrap {
+        background: white; border-radius: 12px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.07); overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #f8fafc; }
+    thead th {
+        padding: 12px 16px; font-size: 11px; font-weight: 700;
+        color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;
+        text-align: left; border-bottom: 1px solid #e2e8f0;
+    }
+    tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fafbff; }
+    tbody td { padding: 13px 16px; font-size: 13px; color: #334155; vertical-align: middle; }
+
+    .badge-borrowed {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa;
+        border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700;
+    }
+    .case-number { font-weight: 700; color: #1a3a6b; }
+    .case-type-badge {
+        display: inline-block; padding: 2px 8px; border-radius: 4px;
+        font-size: 11px; font-weight: 700; background: #eff6ff; color: #2e5fad;
+    }
+    .empty-state {
+        text-align: center; padding: 60px 20px; color: #94a3b8;
+    }
+    .empty-state i { font-size: 40px; margin-bottom: 12px; display: block; color: #cbd5e1; }
+    .empty-state p { font-size: 14px; font-weight: 600; }
+
+    .view-btn {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 5px 12px; background: #eff6ff; color: #2e5fad;
+        border-radius: 6px; font-size: 12px; font-weight: 600;
+        text-decoration: none; transition: background 0.15s;
+    }
+    .view-btn:hover { background: #dbeafe; }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h2><i class="fa-solid fa-arrow-up-from-bracket"></i> Borrowed Cases</h2>
+    <a href="{% if session.role == 'admin' %}/home{% else %}/staff-home{% endif %}" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
+</div>
+
+<div class="borrowed-table-wrap">
+    {% if borrowed_list %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Case Number</th>
+                <th>Case Title</th>
+                <th>Type</th>
+                <th>Borrowed By</th>
+                <th>Purpose</th>
+                <th>Date Borrowed</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in borrowed_list %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td class="case-number">{{ b.case.case_number or '—' }}</td>
+                <td>{{ b.case.case_title or '—' }}</td>
+                <td><span class="case-type-badge">{{ b.case.case_type or '—' }}</span></td>
+                <td>{{ b.performed_by or '—' }}</td>
+                <td>{{ b.notes or '—' }}</td>
+                <td>{{ b.created_at[:10] if b.created_at else '—' }}</td>
+                <td><span class="badge-borrowed"><i class="fa-solid fa-arrow-up-from-bracket"></i> Borrowed</span></td>
+                <td><a href="{% if session.role == 'admin' %}/case/{{ b.case_id }}{% else %}/staff-case/{{ b.case_id }}{% endif %}" class="view-btn"><i class="fa-solid fa-eye"></i> View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-box-open"></i>
+        <p>No borrowed cases at the moment.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

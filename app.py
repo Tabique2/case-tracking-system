@@ -115,10 +115,13 @@ def dashboard():
         return redirect('/login')
 
     case_type = request.args.get('case_type')
+    status = request.args.get('status')
     search = request.args.get('search', '').strip()
     query = supabase.table("cases").select("*").order("id", desc=True)
     if case_type:
         query = query.eq("case_type", case_type)
+    if status:
+        query = query.eq("status", status)
     if search:
         query = query.eq("case_number", search)
 
@@ -509,6 +512,22 @@ def home_page():
         mctc2_counts=mctc2_counts,
         active_page='home'
     )
+
+# Borrowed Cases
+@app.route('/borrowed-cases')
+def borrowed_cases():
+    if 'user' not in session:
+        return redirect('/login')
+    # Get all active borrow transactions (no matching return after)
+    borrows = supabase.table("file_transactions").select("*").eq("action", "borrowed").order("created_at", desc=True).execute().data or []
+    borrowed_list = []
+    for b in borrows:
+        ret = supabase.table("file_transactions").select("id").eq("case_id", b["case_id"]).eq("action", "returned").gte("created_at", b["created_at"]).execute()
+        if not ret.data:
+            case = supabase.table("cases").select("case_number,case_title,case_type").eq("id", b["case_id"]).execute()
+            b["case"] = case.data[0] if case.data else {}
+            borrowed_list.append(b)
+    return render_template("borrowed_cases.html", borrowed_list=borrowed_list, active_page='home')
 
 # Cases by Category
 @app.route('/cases-by-category')

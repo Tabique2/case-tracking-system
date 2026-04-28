@@ -77,6 +77,7 @@
         transition: transform 0.15s, box-shadow 0.15s;
     }
     .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+    a.stat-card { text-decoration: none; cursor: pointer; }
     .stat-card.blue   { border-left-color: #3b82f6; }
     .stat-card.green  { border-left-color: #22c55e; }
     .stat-card.yellow { border-left-color: #eab308; }
@@ -215,48 +216,48 @@
 
 <!-- Stats -->
 <div class="stats-grid">
-    <div class="stat-card blue">
+    <a href="/dashboard" class="stat-card blue">
         <div class="stat-icon-wrap si-blue"><i class="fa-solid fa-folder-open"></i></div>
         <div class="stat-info">
             <div class="s-number">{{ total_cases }}</div>
             <div class="s-label">Total Cases</div>
         </div>
-    </div>
-    <div class="stat-card green">
+    </a>
+    <a href="/dashboard?status=Open" class="stat-card green">
         <div class="stat-icon-wrap si-green"><i class="fa-solid fa-circle-check"></i></div>
         <div class="stat-info">
             <div class="s-number">{{ open_cases }}</div>
             <div class="s-label">Open Cases</div>
         </div>
-    </div>
-    <div class="stat-card yellow">
+    </a>
+    <a href="/dashboard?status=Pending" class="stat-card yellow">
         <div class="stat-icon-wrap si-yellow"><i class="fa-solid fa-clock"></i></div>
         <div class="stat-info">
             <div class="s-number">{{ pending_cases }}</div>
             <div class="s-label">Pending</div>
         </div>
-    </div>
-    <div class="stat-card gray">
+    </a>
+    <a href="/dashboard?status=Closed" class="stat-card gray">
         <div class="stat-icon-wrap si-gray"><i class="fa-solid fa-ban"></i></div>
         <div class="stat-info">
             <div class="s-number">{{ closed_cases }}</div>
             <div class="s-label">Closed</div>
         </div>
-    </div>
-    <div class="stat-card orange">
+    </a>
+    <a href="/borrowed-cases" class="stat-card orange">
         <div class="stat-icon-wrap si-orange"><i class="fa-solid fa-arrow-up-from-bracket"></i></div>
         <div class="stat-info">
             <div class="s-number">{{ borrowed_files }}</div>
             <div class="s-label">Borrowed</div>
         </div>
-    </div>
-    <div class="stat-card red">
+    </a>
+    <a href="/manage-users" class="stat-card red">
         <div class="stat-icon-wrap si-red"><i class="fa-solid fa-users"></i></div>
         <div class="stat-info">
             <div class="s-number">{{ total_users }}</div>
             <div class="s-label">Staff Users</div>
         </div>
-    </div>
+    </a>
 </div>
 
 <!-- Category Section -->
